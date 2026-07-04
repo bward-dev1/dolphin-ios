@@ -148,7 +148,12 @@ Touchscreen::Touchscreen(int controller_id, bool wiimote)
     AddInput(new Axis(m_controller_id, ButtonType::WIIMOTE_GYRO_ROLL_RIGHT, -1.0f));
     AddInput(new Axis(m_controller_id, ButtonType::WIIMOTE_GYRO_YAW_LEFT));
     AddInput(new Axis(m_controller_id, ButtonType::WIIMOTE_GYRO_YAW_RIGHT, -1.0f));
-    
+
+    // Wiimote IMU IR recenter ("Point at TV" calibration). Bound to `Button 800` in
+    // Data/Sys/Profiles/Wiimote/Touchscreen.ini via IMUIR/Recenter. Without this input the
+    // profile binding dangles and recenter can never fire.
+    AddInput(new Button(m_controller_id, ButtonType::WIIMOTE_IR_RECENTER));
+
     // Nunchuk IMU
     AddInput(new Axis(m_controller_id, ButtonType::NUNCHUK_ACCEL_LEFT));
     AddInput(new Axis(m_controller_id, ButtonType::NUNCHUK_ACCEL_RIGHT, -1.0f));
