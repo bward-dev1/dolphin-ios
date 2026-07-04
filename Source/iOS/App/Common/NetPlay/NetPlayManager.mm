@@ -6,6 +6,7 @@
 #import <mutex>
 
 #import "Core/Boot/Boot.h"
+#import "Core/IOS/FS/FileSystem.h"
 #import "Core/NetPlayClient.h"
 #import "Core/NetPlayServer.h"
 #import "Core/SyncIdentifier.h"
