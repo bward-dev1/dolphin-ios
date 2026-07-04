@@ -14,6 +14,11 @@
 #import <sys/socket.h>
 #import <unistd.h>
 
+// DualShockUDPProto.h's Message<T>::CheckAndCastTo<T>() references NOTICE_LOG_FMT/
+// CONTROLLERINTERFACE - a non-dependent name, so it's checked when this header is parsed, not
+// only if CheckAndCastTo is actually called. Must come before the proto header include.
+#import "Common/Logging/Log.h"
+
 #import "InputCommon/ControllerInterface/DualShockUDPClient/DualShockUDPProto.h"
 
 using namespace ciface::DualShockUDPClient::Proto;
