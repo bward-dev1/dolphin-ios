@@ -184,7 +184,6 @@
   BOOL host = [self isHostMode];
   _chooseGameButton.hidden = !host;
   _addressField.hidden = host;
-  _traversalSwitch.superview.hidden = NO;
 
   [_actionButton setTitle:(host ? @"Host" : @"Join") forState:UIControlStateNormal];
 }
