@@ -17,9 +17,11 @@ class SettingsRootViewController : UITableViewController {
   
   override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
     tableView.deselectRow(at: indexPath, animated: true)
-    
+
     if (indexPath.section == 0 && indexPath.row == 3) {
       UIApplication.shared.open(URL(string: "https://oatmealdome.me/dolphinios/")!)
+    } else if (indexPath.section == 1 && indexPath.row == 3) {
+      self.navigationController?.pushViewController(NetPlaySetupViewController(), animated: true)
     }
   }
   

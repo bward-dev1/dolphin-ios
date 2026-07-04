@@ -225,6 +225,28 @@
                                             <segue destination="Kfo-Ac-kYg" kind="show" id="aq1-QP-Y5o"/>
                                         </connections>
                                     </tableViewCell>
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" accessoryType="disclosureIndicator" indentationWidth="10" id="UZL-d9-npk">
+                                        <rect key="frame" x="20" y="357" width="374" height="43.5"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="UZL-d9-npk" id="UgL-0d-JLw">
+                                            <rect key="frame" x="0.0" y="0.0" width="345.5" height="43.5"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="NetPlay" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="cmk-bV-bvR">
+                                                    <rect key="frame" x="20" y="11" width="337.5" height="21.5"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <nil key="textColor"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                            </subviews>
+                                            <constraints>
+                                                <constraint firstAttribute="bottomMargin" secondItem="cmk-bV-bvR" secondAttribute="bottom" id="My0-IP-olu"/>
+                                                <constraint firstItem="cmk-bV-bvR" firstAttribute="top" secondItem="UgL-0d-JLw" secondAttribute="topMargin" id="ste-VS-cbR"/>
+                                                <constraint firstAttribute="trailingMargin" secondItem="cmk-bV-bvR" secondAttribute="trailing" constant="-20" id="Xme-32-aoB"/>
+                                                <constraint firstAttribute="leadingMargin" secondItem="cmk-bV-bvR" secondAttribute="leading" id="IVb-d1-eXv"/>
+                                            </constraints>
+                                        </tableViewCellContentView>
+                                    </tableViewCell>
                                 </cells>
                             </tableViewSection>
                             <tableViewSection id="XA0-MI-tEo">
