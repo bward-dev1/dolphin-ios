@@ -30,9 +30,7 @@
         {
           "fill-specializations" : [
             {
-              "value" : {
-                "solid" : "srgb:1.00000,1.00000,1.00000,1.00000"
-              }
+              "value" : "none"
             },
             {
               "appearance" : "dark",
@@ -79,7 +77,7 @@
               "value" : false
             }
           ],
-          "hidden" : false,
+          "hidden" : true,
           "image-name" : "Dolphin_Emulator_Logo_Refresh-3.svg",
           "name" : "Dolphin_Emulator_Logo_Refresh-3",
           "opacity-specializations" : [
