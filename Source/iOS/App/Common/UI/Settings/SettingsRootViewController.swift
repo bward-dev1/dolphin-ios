@@ -20,6 +20,8 @@ class SettingsRootViewController : UITableViewController {
 
     if (indexPath.section == 0 && indexPath.row == 3) {
       UIApplication.shared.open(URL(string: "https://oatmealdome.me/dolphinios/")!)
+    } else if (indexPath.section == 1 && indexPath.row == 3) {
+      navigationController?.pushViewController(CoverArtSettingsViewController(), animated: true)
     }
   }
   

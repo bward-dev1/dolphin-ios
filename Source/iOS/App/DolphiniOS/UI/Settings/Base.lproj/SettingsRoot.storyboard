@@ -225,6 +225,28 @@
                                             <segue destination="Kfo-Ac-kYg" kind="show" id="aq1-QP-Y5o"/>
                                         </connections>
                                     </tableViewCell>
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" accessoryType="disclosureIndicator" indentationWidth="10" id="cAr-tS-row">
+                                        <rect key="frame" x="20" y="357" width="374" height="43.5"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="cAr-tS-row" id="cAr-tS-cnt">
+                                            <rect key="frame" x="0.0" y="0.0" width="345.5" height="43.5"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Cover Art" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="cAr-tS-lbl">
+                                                    <rect key="frame" x="20" y="11" width="337.5" height="21.5"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <nil key="textColor"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                            </subviews>
+                                            <constraints>
+                                                <constraint firstAttribute="bottomMargin" secondItem="cAr-tS-lbl" secondAttribute="bottom" id="cAr-tS-c01"/>
+                                                <constraint firstItem="cAr-tS-lbl" firstAttribute="top" secondItem="cAr-tS-cnt" secondAttribute="topMargin" id="cAr-tS-c02"/>
+                                                <constraint firstAttribute="trailingMargin" secondItem="cAr-tS-lbl" secondAttribute="trailing" constant="-20" id="cAr-tS-c03"/>
+                                                <constraint firstAttribute="leadingMargin" secondItem="cAr-tS-lbl" secondAttribute="leading" id="cAr-tS-c04"/>
+                                            </constraints>
+                                        </tableViewCellContentView>
+                                    </tableViewCell>
                                 </cells>
                             </tableViewSection>
                             <tableViewSection id="XA0-MI-tEo">

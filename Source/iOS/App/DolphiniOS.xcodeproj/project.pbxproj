@@ -104,6 +104,8 @@
 		B5C096DE33B470A35F07B84D /* RemoteControllerViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = D819A891005ACB865FA02977 /* RemoteControllerViewController.mm */; };
 		79F50FB15BD868E57E10DE01 /* ControllersDSUViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = FE90D874D6AC80EB192DE0C9 /* ControllersDSUViewController.mm */; };
 		3A6A42C2088B426989F2FB87 /* ControllersSkinsViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 124C575A32184EF390888711 /* ControllersSkinsViewController.mm */; };
+		0A565A38967039C8D649554F /* CoverArtDatabaseDownloader.mm in Sources */ = {isa = PBXBuildFile; fileRef = 16816B9EFEA4B93E5FE8B245 /* CoverArtDatabaseDownloader.mm */; };
+		985A47EADA2E1A4B712A8E72 /* CoverArtSettingsViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3DED0BCAB8CF0820B68D35 /* CoverArtSettingsViewController.mm */; };
 		B9661F332D2318D300FB2AAB /* MappingInputDisplayViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = B9661F322D2318D300FB2AAB /* MappingInputDisplayViewController.mm */; };
 		B9661F362D23190300FB2AAB /* MappingInputDisplayInputCell.m in Sources */ = {isa = PBXBuildFile; fileRef = B9661F352D23190300FB2AAB /* MappingInputDisplayInputCell.m */; };
 		B96C5DC92CFE4B200046C029 /* Logger.ini in Resources */ = {isa = PBXBuildFile; fileRef = B96C5DC82CFE4B200046C029 /* Logger.ini */; };
@@ -407,6 +409,10 @@
 		D819A891005ACB865FA02977 /* RemoteControllerViewController.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = RemoteControllerViewController.mm; sourceTree = "<group>"; };
 		7006A93C9ABE73BD144D19C5 /* ControllersDSUViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ControllersDSUViewController.h; sourceTree = "<group>"; };
 		FE90D874D6AC80EB192DE0C9 /* ControllersDSUViewController.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = ControllersDSUViewController.mm; sourceTree = "<group>"; };
+		7C7232B9052C06BE68C0FB49 /* CoverArtDatabaseDownloader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CoverArtDatabaseDownloader.h; sourceTree = "<group>"; };
+		16816B9EFEA4B93E5FE8B245 /* CoverArtDatabaseDownloader.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = CoverArtDatabaseDownloader.mm; sourceTree = "<group>"; };
+		65551808190885EAE879AB74 /* CoverArtSettingsViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CoverArtSettingsViewController.h; sourceTree = "<group>"; };
+		AB3DED0BCAB8CF0820B68D35 /* CoverArtSettingsViewController.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = CoverArtSettingsViewController.mm; sourceTree = "<group>"; };
 		B9661F312D2318D300FB2AAB /* MappingInputDisplayViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MappingInputDisplayViewController.h; sourceTree = "<group>"; };
 		B9661F322D2318D300FB2AAB /* MappingInputDisplayViewController.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MappingInputDisplayViewController.mm; sourceTree = "<group>"; };
 		B9661F342D23190300FB2AAB /* MappingInputDisplayInputCell.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MappingInputDisplayInputCell.h; sourceTree = "<group>"; };
@@ -644,6 +650,7 @@
 			children = (
 				B95AC5242D29B9100048E48B /* Audio */,
 				5907417727B368BCA1024B26 /* DSUServer */,
+				5B6956B9C99C4E2313D0726B /* CoverArt */,
 				B9B2C65C288E481300CB6569 /* Emulation */,
 				B974923D296035E500794509 /* Fastmem */,
 				B900A7BB27F4CD16000361DD /* FoundationUtil */,
@@ -672,6 +679,15 @@
 				C2B2946F647FAA6C987D36C4 /* DSUServerManager.mm */,
 			);
 			path = DSUServer;
+			sourceTree = "<group>";
+		};
+		5B6956B9C99C4E2313D0726B /* CoverArt */ = {
+			isa = PBXGroup;
+			children = (
+				7C7232B9052C06BE68C0FB49 /* CoverArtDatabaseDownloader.h */,
+				16816B9EFEA4B93E5FE8B245 /* CoverArtDatabaseDownloader.mm */,
+			);
+			path = CoverArt;
 			sourceTree = "<group>";
 		};
 		D472E227695C4299B91E11FA /* NetPlay */ = {
@@ -821,6 +837,15 @@
 				FE90D874D6AC80EB192DE0C9 /* ControllersDSUViewController.mm */,
 			);
 			path = Controllers;
+			sourceTree = "<group>";
+		};
+		47BF4F5654710DA7BBA7791A /* CoverArt */ = {
+			isa = PBXGroup;
+			children = (
+				65551808190885EAE879AB74 /* CoverArtSettingsViewController.h */,
+				AB3DED0BCAB8CF0820B68D35 /* CoverArtSettingsViewController.mm */,
+			);
+			path = CoverArt;
 			sourceTree = "<group>";
 		};
 		B904ACE628866E12008B6BE9 /* Controllers */ = {
@@ -1006,6 +1031,7 @@
 				B97C49AD297E6CED00E30877 /* About */,
 				B93986FD287F8F0F008E8E47 /* Config */,
 				B904ACE5288666D3008B6BE9 /* Controllers */,
+				47BF4F5654710DA7BBA7791A /* CoverArt */,
 				B9114F952893C5D600B9C57A /* Debug */,
 				B9DC5FA628849467004BD94A /* Graphics */,
 				B904ACF22886AAED008B6BE9 /* Mapping */,
@@ -2139,6 +2165,8 @@
 				113B3639E023868CD7149608 /* DSUServerManager.mm in Sources */,
 				B5C096DE33B470A35F07B84D /* RemoteControllerViewController.mm in Sources */,
 				79F50FB15BD868E57E10DE01 /* ControllersDSUViewController.mm in Sources */,
+				0A565A38967039C8D649554F /* CoverArtDatabaseDownloader.mm in Sources */,
+				985A47EADA2E1A4B712A8E72 /* CoverArtSettingsViewController.mm in Sources */,
 				B97C49B2297E717D00E30877 /* AboutViewController.m in Sources */,
 				B939872E2880896D008E8E47 /* ConfigGameCubeViewController.mm in Sources */,
 				B9D93897283ECE1100B290FC /* DOLUIKitSwitch.m in Sources */,
