@@ -17,6 +17,12 @@
   UITextView* _chatView;
   UITextField* _chatInputField;
   UIButton* _startButton;
+
+  // Snapshotted once per -handleUpdate, not re-queried per dataSource callback: players can be
+  // reassigned on NetPlay's own networking thread at any moment (someone joins/leaves), and
+  // numberOfRowsInSection/cellForRowAtIndexPath calling [NetPlayManager shared].players
+  // independently could see two different array lengths mid-reload and crash out of bounds.
+  NSArray<NetPlayPlayerInfo*>* _displayedPlayers;
 }
 
 - (instancetype)init {
@@ -137,6 +143,7 @@
   _statusLabel.text = manager.statusText;
   _startButton.hidden = !manager.isHost;
 
+  _displayedPlayers = manager.players;
   [self.tableView reloadData];
 
   NSArray<NSString*>* chat = manager.chatLog;
@@ -183,7 +190,7 @@
 }
 
 - (NSInteger)tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section {
-  return [NetPlayManager shared].players.count;
+  return _displayedPlayers.count;
 }
 
 - (nullable NSString*)tableView:(UITableView*)tableView titleForHeaderInSection:(NSInteger)section {
@@ -196,7 +203,7 @@
     cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"PlayerCell"];
   }
 
-  NetPlayPlayerInfo* player = [NetPlayManager shared].players[indexPath.row];
+  NetPlayPlayerInfo* player = _displayedPlayers[indexPath.row];
 
   cell.textLabel.text = [NSString stringWithFormat:@"%@%@", player.name, player.isHost ? @" (Host)" : @""];
   cell.detailTextLabel.text = [NSString stringWithFormat:@"%@ - %lu ms", player.gameStatusText,

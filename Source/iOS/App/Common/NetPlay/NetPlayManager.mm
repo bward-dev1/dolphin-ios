@@ -526,13 +526,18 @@ private:
 }
 
 - (void)stop {
+  // Local unique_ptrs destroy in REVERSE declaration order. NetPlayClient's and NetPlayServer's
+  // own destructors (and NetPlayServer's joined background thread) call back into m_dialog
+  // (our IOSNetPlayUI, e.g. ~NetPlayClient calls m_dialog->AbortGameDigest() directly) - so the
+  // UI object must be the LAST thing destroyed, or those calls dereference freed memory.
+  // Declared first (= destroyed last): uiToDestroy. Declared last (= destroyed first):
+  // clientToDestroy, matching "client before server".
+  std::unique_ptr<IOSNetPlayUI> uiToDestroy;
   std::unique_ptr<NetPlay::NetPlayServer> serverToDestroy;
   std::unique_ptr<NetPlay::NetPlayClient> clientToDestroy;
-  std::unique_ptr<IOSNetPlayUI> uiToDestroy;
 
   {
     std::lock_guard<std::mutex> lock(_stateMutex);
-    // Client must be torn down before the server it's connected to.
     clientToDestroy = std::move(_client);
     serverToDestroy = std::move(_server);
     uiToDestroy = std::move(_ui);
