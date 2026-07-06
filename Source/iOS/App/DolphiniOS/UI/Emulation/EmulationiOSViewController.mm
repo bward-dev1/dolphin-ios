@@ -164,8 +164,12 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
   if (wiimoteTouchPadAttached) {
     TCWiiTouchIRMode irMode = (TCWiiTouchIRMode)Config::Get(Config::MAIN_TOUCH_PAD_IR_MODE);
 
+    // "Disabled" is the mode that hands pointing over to the Motion (gyro/IMU) system below -
+    // touch and motion pointing are mutually exclusive (see updatePointerValuesOnWiiTouchPads),
+    // so this needs to read as "use motion instead," not just "pointing off," or gyro aiming
+    // never visibly does anything and looks completely broken.
     UIMenu* menu = [UIMenu menuWithTitle:@"Touch IR Pointer" image:[UIImage systemImageNamed:@"hand.point.up.left"] identifier:nil options:0 children:@[
-      [UIAction actionWithTitle:@"Disabled" image:nil identifier:nil handler:^(UIAction*) {
+      [UIAction actionWithTitle:@"Disabled (Use Motion)" image:nil identifier:nil handler:^(UIAction*) {
         Config::SetBaseOrCurrent(Config::MAIN_TOUCH_PAD_IR_MODE, TCWiiTouchIRModeNone);
 
         [self updatePointerValuesOnWiiTouchPads];
@@ -294,22 +298,40 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
   self.navigationItem.leftBarButtonItem.menu = [UIMenu menuWithChildren:menuItems];
 }
 
+// Motion/gyro pointing only ever actually moves the in-game cursor while Touch IR Pointer is
+// set to "Disabled" (updatePointerValuesOnWiiTouchPads force-disables the IMUPoint group
+// whenever touch mode is Follow/Drag) - a user calibrating gyro clearly means to use it, so
+// switch modes for them here rather than leaving them to discover a separate, non-obviously
+// related menu item first (this exact gap is why gyro aiming looked completely dead: it was
+// silently ignored while the default touch mode, Drag, was still active).
+- (void)switchToMotionPointingIfNeeded {
+  if ((TCWiiTouchIRMode)Config::Get(Config::MAIN_TOUCH_PAD_IR_MODE) != TCWiiTouchIRModeNone) {
+    Config::SetBaseOrCurrent(Config::MAIN_TOUCH_PAD_IR_MODE, TCWiiTouchIRModeNone);
+    [self updatePointerValuesOnWiiTouchPads];
+    [self recreateMenu];
+  }
+}
+
 // "Calibrate Gyroscope": lay the device flat and still, then confirm. Measures the
 // resting gyro bias and subtracts it from all future readings to kill motion drift.
 - (void)promptFlatGyroCalibration {
   UIAlertController* alert = [UIAlertController
       alertControllerWithTitle:@"Calibrate Gyroscope"
                        message:@"Lay your device down perfectly flat and still on a level "
-                               @"surface, then tap Calibrate. Hold still for a moment."
+                               @"surface, then tap Calibrate. Hold still for a moment. This "
+                               @"also switches Touch IR Pointer to Motion, so aiming the device "
+                               @"actually moves the in-game pointer afterward."
                 preferredStyle:UIAlertControllerStyleAlert];
 
   [alert addAction:[UIAlertAction actionWithTitle:@"Calibrate"
                                             style:UIAlertActionStyleDefault
                                           handler:^(UIAlertAction*) {
+    [self switchToMotionPointingIfNeeded];
+
     [[TCDeviceMotion shared] calibrateFlat:^{
       UIAlertController* done = [UIAlertController
           alertControllerWithTitle:@"Gyroscope Calibrated"
-                           message:@"Resting drift has been zeroed."
+                           message:@"Resting drift has been zeroed. Motion pointing is now active."
                     preferredStyle:UIAlertControllerStyleAlert];
       [done addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
       [self presentViewController:done animated:YES completion:nil];
@@ -328,12 +350,15 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
       alertControllerWithTitle:@"Calibrate Gyroscope for TV"
                        message:@"Hold your device flat and point the front-middle of it "
                                @"directly at your TV, then tap Calibrate. The pointer will "
-                               @"re-center to face your TV."
+                               @"re-center to face your TV. This also switches Touch IR Pointer "
+                               @"to Motion, so aiming the device actually moves the in-game "
+                               @"pointer afterward."
                 preferredStyle:UIAlertControllerStyleAlert];
 
   [alert addAction:[UIAlertAction actionWithTitle:@"Calibrate"
                                             style:UIAlertActionStyleDefault
                                           handler:^(UIAlertAction*) {
+    [self switchToMotionPointingIfNeeded];
     [[TCDeviceMotion shared] recenterPointer];
   }]];
   [alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
