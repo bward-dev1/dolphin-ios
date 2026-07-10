@@ -195,7 +195,7 @@ For additional documentation, including:
 - Emulator documentation
 - Development information
 
-see:
+  ***See the attached resources for info on anything dolphin:***
 
 - **Dolphin:** https://github.com/dolphin-emu/dolphin
 - **DolphiniOS:** https://github.com/OatmealDome/dolphin-ios
@@ -207,4 +207,4 @@ see:
 
 - **DolphiniOS** by OatmealDome
 - **Dolphin Emulator Project** and its contributors
-- Additional features and improvements by **bward-dev1**
+- Additional features and improvements by **bward-dev1 + RosinLabs**
