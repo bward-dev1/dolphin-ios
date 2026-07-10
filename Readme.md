@@ -26,13 +26,17 @@ GameCube/Wii emulator, for iOS and iPadOS — with a batch of features layered o
 
 ## Building
 
-This fork builds via GitHub Actions (`.github/workflows/build.yml`) on a GitHub-hosted
+This fork auto-builds via GitHub Actions (`.github/workflows/build.yml`) on a GitHub-hosted
 `macos-15` runner — no local Xcode install, Apple Developer account, or code-signing setup is
 needed to get an installable IPA. Trigger a build against any branch with:
 
 ```sh
 gh workflow run build.yml --ref <branch>
-```
+```, or go into the 'actions' tab in github, click on the latest run, and then download the output .zip(all the artifacts from the build in one)/ipa/tipa, and then install it on your ios device using one of the following:
+sidestore
+livecontainer
+sidestore + livecontainer bundle
+trollstore
 
 The run uploads a single artifact containing an ad-hoc-signed `Non-Jailbroken.ipa` (sideload via
 [AltStore](https://altstore.io)/[SideStore](https://sidestore.io)), a `TrollStore.tipa` (if the
