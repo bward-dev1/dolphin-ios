@@ -1,8 +1,8 @@
-# DolphiniOS (bward-dev1 Fork) Code of Conduct
+# DolphiniOS (RosinLabs Fork) Code of Conduct
 
 ## Our Community
 
-DolphiniOS (bward-dev1 Fork) is an open source project built on collaboration, respect, and a shared passion for improving the Dolphin experience on iOS.
+DolphiniOS (RosinLabs Fork) is an open source project built on collaboration, respect, and a shared passion for improving the Dolphin experience on iOS.
 
 Whether you're reporting a bug, submitting a pull request, proposing a feature, answering questions, or simply participating in discussions, you're expected to contribute in a respectful and constructive manner.
 
