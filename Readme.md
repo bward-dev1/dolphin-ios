@@ -1,343 +1,210 @@
-# DolphiniOS (bward-dev1 fork)
+# DolphiniOS (bward-dev1 Fork)
 
-A fork of [OatmealDome's DolphiniOS](https://github.com/OatmealDome/dolphin-ios) — Dolphin, the
-GameCube/Wii emulator, for iOS and iPadOS — with a batch of features layered on top:
+A fork of [OatmealDome's DolphiniOS](https://github.com/OatmealDome/dolphin-ios) that adds several iOS-specific features, quality-of-life improvements, and new functionality while staying closely aligned with upstream.
 
-* **Wii motion calibration** — "Calibrate Gyroscope" (lay the device flat, zeroes out drift) and
-  "Calibrate Gyroscope for TV" (point at your TV, recenters the pointer to face it). Fixes a
-  motion-pointing pipeline that was silently broken in three places in upstream's iOS build.
-* **Controller skins** — drop PNGs into a `Skins/<name>/` folder (via the Files app) to reskin
-  the on-screen touch controller. Partial skins fall back to the default art per-image, and
-  there's a one-tap "create a starter skin from the current artwork" so you never have to guess
-  filenames.
-* **NetPlay** — host or join a real multiplayer session (traversal host-code or direct IP/UPnP),
-  with a live lobby, chat, and player list, from *Play Together...* in the game list's menu.
-  Every player still needs their own copy of the ROM (Dolphin's netplay is lockstep, not
-  streaming).
-* **Remote Controller (DSU)** — turn a second device on the same WiFi into a motion+button
-  controller for a game running on a *host* device, using Dolphin's own CemuHook-compatible DSU
-  protocol (the core already ships a full DSU client; this exposes it on iOS and adds a DSU
-  *server* mode so a second device can feed it). The second device needs neither the ROM nor the
-  RAM/storage to run the game — only the host does the emulating. See *Remote Controller
-  Mode...* in the game list's menu, and *Settings > Controllers > Remote Controller (DSU)* on
-  the host.
-* **Rainbow app icon** — the dolphin, same pose and outline, filled with vertical ROYGBIV
-  stripes.
+---
 
-## Building
+## ✨ Features
 
-This fork auto-builds via GitHub Actions (`.github/workflows/build.yml`) on a GitHub-hosted
-`macos-15` runner — no local Xcode install, Apple Developer account, or code-signing setup is
-needed to get an installable IPA. Trigger a build against any branch with:
+### 🎯 Wii Motion Calibration
+
+Built-in tools for accurate Wii pointer controls.
+
+- **Calibrate Gyroscope** – Place your device flat on a surface to eliminate gyroscope drift.
+- **Calibrate Gyroscope for TV** – Point your device at your TV to recenter the Wii pointer.
+
+These tools also fix multiple issues in the upstream iOS motion input pipeline, resulting in significantly more accurate and reliable motion controls.
+
+---
+
+### 🎨 Controller Skins
+
+Completely customize the on-screen touch controller using your own PNG artwork.
+
+Place skins in:
+
+```text
+Skins/<Skin Name>/
+```
+
+Features include:
+
+- Automatic fallback to the default artwork for any missing images.
+- One-tap creation of a starter skin using the current controller artwork.
+- Partial skins are fully supported, allowing you to replace only the images you want.
+
+---
+
+### 🌐 NetPlay
+
+Play GameCube and Wii games online with friends directly from iOS.
+
+Supported features include:
+
+- Traversal Server host codes
+- Direct IP connections
+- UPnP
+- Live lobby
+- Player list
+- Built-in chat
+
+Every player must have their own copy of the game, as Dolphin's NetPlay synchronizes emulator state rather than streaming gameplay.
+
+---
+
+### 📱 Remote Controller (DSU)
+
+Turn a second iPhone or iPad into a wireless Wii controller over your local Wi-Fi network.
+
+The host device runs the game while the second device sends button presses and motion data using Dolphin's CemuHook-compatible DSU protocol.
+
+The controller device:
+
+- Does **not** need the game ROM.
+- Does **not** emulate the game.
+- Requires very little processing power.
+- Only needs to be connected to the same local network as the host.
+
+#### Host Setup
+
+```text
+Settings → Controllers → Remote Controller (DSU)
+```
+
+#### Controller Setup
+
+```text
+Play Together… → Remote Controller Mode…
+```
+
+---
+
+### 🌈 Rainbow App Icon
+
+Includes an alternate app icon featuring the classic DolphiniOS dolphin with a vertical rainbow gradient while preserving the original silhouette.
+
+---
+
+## 🚀 Getting an IPA
+
+Every commit is automatically built using GitHub Actions on GitHub-hosted macOS runners.
+
+No Mac, Apple Developer account, Xcode installation, or code-signing setup is required to obtain an installable build.
+
+### Trigger a Build
+
+Using GitHub CLI:
 
 ```sh
 gh workflow run build.yml --ref <branch>
-```, or go into the 'actions' tab in github, click on the latest run, and then download the output .zip(all the artifacts from the build in one)/ipa/tipa, and then install it on your ios device using one of the following:
-sidestore
-livecontainer
-sidestore + livecontainer bundle
-trollstore
-
-The run uploads a single artifact containing an ad-hoc-signed `Non-Jailbroken.ipa` (sideload via
-[AltStore](https://altstore.io)/[SideStore](https://sidestore.io)), a `TrollStore.tipa` (if the
-device already has [TrollStore](https://github.com/opa334/TrollStore)), and Jailbroken
-`.deb`s (rootful/rootless, via Sileo/Zebra) — grab it from the run's Artifacts section, or with
-`gh run download <run-id>`, and install whichever variant matches your device.
-
-### Building locally instead
-
-You will need the following:
-
-* A Mac capable of running macOS Big Sur 11.3 or later
-* Xcode 13 or later
-* Homebrew (or your favourite package manager)
-
-First, install the necessary tools using Homebrew:
-
 ```
+
+Or from the GitHub website:
+
+1. Open the **Actions** tab.
+2. Select the **Build** workflow.
+3. Choose the latest successful run.
+4. Download the workflow artifact.
+5. Extract the downloaded ZIP.
+
+The archive contains:
+
+- `Non-Jailbroken.ipa`
+- `TrollStore.tipa`
+- Rootful jailbreak `.deb`
+- Rootless jailbreak `.deb`
+
+Install whichever package matches your device using:
+
+- SideStore
+- LiveContainer
+- SideStore + LiveContainer Bundle
+- TrollStore
+- Sileo or Zebra (for jailbreak packages)
+
+---
+
+## 🛠️ Building Locally
+
+### Requirements
+
+- macOS Big Sur 11.3 or later
+- Xcode 13 or newer
+- Homebrew (or another package manager)
+
+Install the required tools:
+
+```sh
 brew install cmake ninja bartycrouch
 ```
 
-If you are using a different package manager, refer to its documentation.
+Before building, you'll need to configure your own bundle identifier and Apple Developer Team ID.
 
-You must change the organization identifier and team ID before you can build!
+### Bundle Identifier
 
-To change the organization identifier, go to `Project` -> `Config` -> `BundleIdentifier.xcconfig`, and change `use.your.own.organization.identifier` to something unique.
+Edit:
 
-To change the team ID, go to `Project` -> `Config` -> `DevelopmentTeam.xcconfig`, and replace `your-team-id` with your developer account's team ID.
-
-Once finished, you can open the Xcode project at `Source/iOS/App/DolphiniOS.xcodeproj` and build DolphiniOS.
-
-# Dolphin - A GameCube and Wii Emulator
-
-[Homepage](https://dolphin-emu.org/) | [Project Site](https://github.com/dolphin-emu/dolphin) | [Buildbot](https://dolphin.ci/) | [Forums](https://forums.dolphin-emu.org/) | [Wiki](https://wiki.dolphin-emu.org/) | [GitHub Wiki](https://github.com/dolphin-emu/dolphin/wiki) | [Issue Tracker](https://bugs.dolphin-emu.org/projects/emulator/issues) | [Coding Style](https://github.com/dolphin-emu/dolphin/blob/master/Contributing.md) | [Transifex Page](https://app.transifex.com/dolphinemu/dolphin-emu/dashboard/) | [Analytics](https://mon.dolphin-emu.org/)
-
-Dolphin is an emulator for running GameCube and Wii games on Windows,
-Linux, macOS, and recent Android devices. It's licensed under the terms
-of the GNU General Public License, version 2 or later (GPLv2+).
-
-Please read the [FAQ](https://dolphin-emu.org/docs/faq/) before using Dolphin.
-
-## System Requirements
-
-### Desktop
-
-* OS
-    * Windows (10 1903 or higher).
-    * Linux.
-    * macOS (11.0 Big Sur or higher).
-    * Unix-like systems other than Linux are not officially supported but might work.
-* Processor
-    * A CPU with SSE2 support.
-    * A modern CPU (3 GHz and Dual Core, not older than 2008) is highly recommended.
-* Graphics
-    * A reasonably modern graphics card (Direct3D 11.1 / OpenGL 3.3).
-    * A graphics card that supports Direct3D 11.1 / OpenGL 4.4 is recommended.
-
-### Android
-
-* OS
-    * Android (5.0 Lollipop or higher).
-* Processor
-    * A processor with support for 64-bit applications (either ARMv8 or x86-64).
-* Graphics
-    * A graphics processor that supports OpenGL ES 3.0 or higher. Performance varies heavily with [driver quality](https://dolphin-emu.org/blog/2013/09/26/dolphin-emulator-and-opengl-drivers-hall-fameshame/).
-    * A graphics processor that supports standard desktop OpenGL features is recommended for best performance.
-
-Dolphin can only be installed on devices that satisfy the above requirements. Attempting to install on an unsupported device will fail and display an error message.
-
-## Building for Windows
-
-Use the solution file `Source/dolphin-emu.sln` to build Dolphin on Windows.
-Dolphin targets the latest MSVC shipped with Visual Studio or Build Tools.
-Other compilers might be able to build Dolphin on Windows but have not been
-tested and are not recommended to be used. Git and latest Windows SDK must be
-installed when building.
-
-Make sure to pull submodules before building:
-```sh
-git submodule update --init --recursive
+```text
+Project/Config/BundleIdentifier.xcconfig
 ```
 
-The "Release" solution configuration includes performance optimizations for the best user experience but complicates debugging Dolphin.
-The "Debug" solution configuration is significantly slower, more verbose and less permissive but makes debugging Dolphin easier.
+Replace:
 
-## Building for Linux and macOS
-
-Dolphin requires [CMake](https://cmake.org/) for systems other than Windows. 
-You need a recent version of GCC or Clang with decent c++20 support. CMake will
-inform you if your compiler is too old.
-Many libraries are bundled with Dolphin and used if they're not installed on 
-your system. CMake will inform you if a bundled library is used or if you need
-to install any missing packages yourself. You may refer to the [wiki](https://github.com/dolphin-emu/dolphin/wiki/Building-for-Linux) for more information.
-
-Make sure to pull submodules before building:
-```sh
-git submodule update --init --recursive
+```text
+use.your.own.organization.identifier
 ```
 
-### macOS Build Steps:
+with a unique reverse-domain identifier.
 
-A binary supporting a single architecture can be built using the following steps: 
+### Development Team
 
-1. `mkdir build`
-2. `cd build`
-3. `cmake ..`
-4. `make -j $(sysctl -n hw.logicalcpu)`
+Edit:
 
-An application bundle will be created in `./Binaries`.
-
-A script is also provided to build universal binaries supporting both x64 and ARM in the same
-application bundle using the following steps:
-
-1. `mkdir build`
-2. `cd build`
-3. `python ../BuildMacOSUniversalBinary.py`
-4. Universal binaries will be available in the `universal` folder
-
-Doing this is more complex as it requires installation of library dependencies for both x64 and ARM (or universal library
-equivalents) and may require specifying additional arguments to point to relevant library locations. 
-Execute BuildMacOSUniversalBinary.py --help for more details.  
-
-### Linux Global Build Steps:
-
-To install to your system.
-
-1. `mkdir build`
-2. `cd build`
-3. `cmake ..`
-4. `make -j $(nproc)`
-5. `sudo make install`
-
-### Linux Local Build Steps:
-
-Useful for development as root access is not required.
-
-1. `mkdir Build`
-2. `cd Build`
-3. `cmake .. -DLINUX_LOCAL_DEV=true`
-4. `make -j $(nproc)`
-5. `ln -s ../../Data/Sys Binaries/`
-
-### Linux Portable Build Steps:
-
-Can be stored on external storage and used on different Linux systems.
-Or useful for having multiple distinct Dolphin setups for testing/development/TAS.
-
-1. `mkdir Build`
-2. `cd Build`
-3. `cmake .. -DLINUX_LOCAL_DEV=true`
-4. `make -j $(nproc)`
-5. `cp -r ../Data/Sys/ Binaries/`
-6. `touch Binaries/portable.txt`
-
-## Building for Android
-
-These instructions assume familiarity with Android development. If you do not have an
-Android dev environment set up, see [AndroidSetup.md](AndroidSetup.md).
-
-Make sure to pull submodules before building:
-```sh
-git submodule update --init --recursive
+```text
+Project/Config/DevelopmentTeam.xcconfig
 ```
 
-If using Android Studio, import the Gradle project located in `./Source/Android`.
+Replace:
 
-Android apps are compiled using a build system called Gradle. Dolphin's native component,
-however, is compiled using CMake. The Gradle script will attempt to run a CMake build
-automatically while building the Java code.
-
-## Uninstalling
-
-On Windows, simply remove the extracted directory, unless it was installed with the NSIS installer,
-in which case you can uninstall Dolphin like any other Windows application.
-
-Linux users can run `cat install_manifest.txt | xargs -d '\n' rm` as root from the build directory
-to uninstall Dolphin from their system.
-
-macOS users can simply delete Dolphin.app to uninstall it.
-
-Additionally, you'll want to remove the global user directory if you don't plan on reinstalling Dolphin.
-
-## Command Line Usage
-
-```
-Usage: Dolphin.exe [options]... [FILE]...
-
-Options:
-  --version             show program's version number and exit
-  -h, --help            show this help message and exit
-  -u USER, --user=USER  User folder path
-  -m MOVIE, --movie=MOVIE
-                        Play a movie file
-  -e <file>, --exec=<file>
-                        Load the specified file
-  -n <16-character ASCII title ID>, --nand_title=<16-character ASCII title ID>
-                        Launch a NAND title
-  -C <System>.<Section>.<Key>=<Value>, --config=<System>.<Section>.<Key>=<Value>
-                        Set a configuration option
-  -s <file>, --save_state=<file>
-                        Load the initial save state
-  -d, --debugger        Show the debugger pane and additional View menu options
-  -l, --logger          Open the logger
-  -b, --batch           Run Dolphin without the user interface (Requires
-                        --exec or --nand-title)
-  -c, --confirm         Set Confirm on Stop
-  -v VIDEO_BACKEND, --video_backend=VIDEO_BACKEND
-                        Specify a video backend
-  -a AUDIO_EMULATION, --audio_emulation=AUDIO_EMULATION
-                        Choose audio emulation from [HLE|LLE]
+```text
+your-team-id
 ```
 
-Available DSP emulation engines are HLE (High Level Emulation) and
-LLE (Low Level Emulation). HLE is faster but less accurate whereas
-LLE is slower but close to perfect. Note that LLE has two submodes (Interpreter and Recompiler)
-but they cannot be selected from the command line.
+with your Apple Developer Team ID.
 
-Available video backends are "D3D" and "D3D12" (they are only available on Windows), "OGL", and "Vulkan".
-There's also "Null", which will not render anything, and
-"Software Renderer", which uses the CPU for rendering and
-is intended for debugging purposes only.
+Once configured, open:
 
-## DolphinTool Usage
-```
-usage: dolphin-tool COMMAND -h
-
-commands supported: [convert, verify, header, extract]
+```text
+Source/iOS/App/DolphiniOS.xcodeproj
 ```
 
-```
-Usage: convert [options]... [FILE]...
+and build using Xcode.
 
-Options:
-  -h, --help            show this help message and exit
-  -u USER, --user=USER  User folder path, required for temporary processing
-                        files.Will be automatically created if this option is
-                        not set.
-  -i FILE, --input=FILE
-                        Path to disc image FILE.
-  -o FILE, --output=FILE
-                        Path to the destination FILE.
-  -f FORMAT, --format=FORMAT
-                        Container format to use. Default is RVZ. [iso|gcz|wia|rvz]
-  -s, --scrub           Scrub junk data as part of conversion.
-  -b BLOCK_SIZE, --block_size=BLOCK_SIZE
-                        Block size for GCZ/WIA/RVZ formats, as an integer.
-                        Suggested value for RVZ: 131072 (128 KiB)
-  -c COMPRESSION, --compression=COMPRESSION
-                        Compression method to use when converting to WIA/RVZ.
-                        Suggested value for RVZ: zstd [none|zstd|bzip|lzma|lzma2]
-  -l COMPRESSION_LEVEL, --compression_level=COMPRESSION_LEVEL
-                        Level of compression for the selected method. Ignored
-                        if 'none'. Suggested value for zstd: 5
-```
+---
 
-```
-Usage: verify [options]...
+## 📚 Upstream Documentation
 
-Options:
-  -h, --help            show this help message and exit
-  -u USER, --user=USER  User folder path, required for temporary processing
-                        files.Will be automatically created if this option is
-                        not set.
-  -i FILE, --input=FILE
-                        Path to disc image FILE.
-  -a ALGORITHM, --algorithm=ALGORITHM
-                        Optional. Compute and print the digest using the
-                        selected algorithm, then exit. [crc32|md5|sha1|rchash]
-```
+This fork stays closely synchronized with the official Dolphin and DolphiniOS projects.
 
-```
-Usage: header [options]...
+For additional documentation, including:
 
-Options:
-  -h, --help            show this help message and exit
-  -i FILE, --input=FILE
-                        Path to disc image FILE.
-  -b, --block_size      Optional. Print the block size of GCZ/WIA/RVZ formats,
-then exit.
-  -c, --compression     Optional. Print the compression method of GCZ/WIA/RVZ
-                        formats, then exit.
-  -l, --compression_level
-                        Optional. Print the level of compression for WIA/RVZ
-                        formats, then exit.
-```
+- System requirements
+- Building on Windows, Linux, macOS, and Android
+- Command-line options
+- DolphinTool
+- Emulator documentation
+- Development information
 
-```
-Usage: extract [options]...
+see:
 
-Options:
-  -h, --help            show this help message and exit
-  -i FILE, --input=FILE
-                        Path to disc image FILE.
-  -o FOLDER, --output=FOLDER
-                        Path to the destination FOLDER.
-  -p PARTITION, --partition=PARTITION
-                        Which specific partition you want to extract.
-  -s SINGLE, --single=SINGLE
-                        Which specific file/directory you want to extract.
-  -l, --list            List all files in volume/partition. Will print the
-                        directory/file specified with --single if defined.
-  -q, --quiet           Mute all messages except for errors.
-  -g, --gameonly        Only extracts the DATA partition.
-```
+- **Dolphin:** https://github.com/dolphin-emu/dolphin
+- **DolphiniOS:** https://github.com/OatmealDome/dolphin-ios
+- **Official Documentation:** https://dolphin-emu.org/docs/
+
+---
+
+## ❤️ Credits
+
+- **DolphiniOS** by OatmealDome
+- **Dolphin Emulator Project** and its contributors
+- Additional features and improvements by **bward-dev1**
