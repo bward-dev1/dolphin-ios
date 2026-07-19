@@ -9,6 +9,7 @@
 #import "GameFileCacheManager.h"
 #import "GameFilePtrWrapper.h"
 #import "GameLibraryPreferences.h"
+#import "LocalizationUtil.h"
 #import "SoftwarePropertiesViewController.h"
 #import "Swift.h"
 #import "WiiSystemUpdateViewController.h"
