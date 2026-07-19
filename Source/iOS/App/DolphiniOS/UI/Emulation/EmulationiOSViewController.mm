@@ -247,10 +247,31 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
       [self.navigationController setNavigationBarHidden:true animated:true];
     }]
   ]]];
+  BOOL isMuted = Config::Get(Config::MAIN_AUDIO_MUTED);
+  UIAction* muteAction = [UIAction actionWithTitle:isMuted ? DOLCoreLocalizedString(@"Unmute") : DOLCoreLocalizedString(@"Mute")
+                                              image:[UIImage systemImageNamed:isMuted ? @"speaker.slash" : @"speaker.wave.2"]
+                                         identifier:nil
+                                            handler:^(UIAction*) {
+    Config::SetBaseOrCurrent(Config::MAIN_AUDIO_MUTED, !isMuted);
+    [self recreateMenu];
+  }];
+
+  BOOL showingFps = Config::Get(Config::GFX_SHOW_FPS);
+  UIAction* fpsAction = [UIAction actionWithTitle:DOLCoreLocalizedString(@"Show FPS Counter")
+                                             image:[UIImage systemImageNamed:@"speedometer"]
+                                        identifier:nil
+                                           handler:^(UIAction*) {
+    Config::SetBaseOrCurrent(Config::GFX_SHOW_FPS, !showingFps);
+    [self recreateMenu];
+  }];
+  fpsAction.state = showingFps ? UIMenuElementStateOn : UIMenuElementStateOff;
+
   [menuItems addObject:[UIMenu menuWithTitle:@"" image:nil identifier:nil options:UIMenuOptionsDisplayInline children:@[
     [UIAction actionWithTitle:DOLCoreLocalizedString(@"Take Screenshot") image:[UIImage systemImageNamed:@"camera"] identifier:nil handler:^(UIAction*) {
       [self takeScreenshot];
-    }]
+    }],
+    muteAction,
+    fpsAction
   ]]];
 
   if ([self emulateSkylanderPortal] && Core::System::GetInstance().IsWii()) {
