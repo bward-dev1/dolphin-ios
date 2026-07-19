@@ -208,8 +208,10 @@ typedef NS_ENUM(NSInteger, DOLSoftwareListDocumentPickerType) {
   UIDocumentPickerViewController* pickerController = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:contentTypes];
   pickerController.delegate = self;
   pickerController.modalPresentationStyle = UIModalPresentationPageSheet;
-  pickerController.allowsMultipleSelection = false;
-  
+  // Importing is the only flow that can sensibly handle more than one file at once -- NAND
+  // import and "Open" (launch a file directly) are both inherently single-file operations.
+  pickerController.allowsMultipleSelection = pickerType == DOLSoftwareListDocumentPickerTypeImportSoftware;
+
   _pickerType = pickerType;
   
   [self presentViewController:pickerController animated:true completion:nil];
@@ -230,7 +232,7 @@ typedef NS_ENUM(NSInteger, DOLSoftwareListDocumentPickerType) {
   };
   
   if (_pickerType == DOLSoftwareListDocumentPickerTypeImportSoftware) {
-    [[ImportFileManager shared] importFileAtUrl:urls[0]];
+    [[ImportFileManager shared] importFilesAtUrls:urls];
   } else if (_pickerType == DOLSoftwareListDocumentPickerTypeOpenExternal) {
     NSURL* url = urls[0];
     

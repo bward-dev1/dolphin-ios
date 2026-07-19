@@ -15,6 +15,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)importFileAtUrl:(NSURL*)url;
 
+// Imports each URL in turn, one at a time -- importFileAtUrl:'s Copy/Move/Cancel prompt and
+// single shared alert window can't handle more than one in flight at once. Safe to call with
+// a single-element array too, same as importFileAtUrl:.
+- (void)importFilesAtUrls:(NSArray<NSURL*>*)urls;
+
 @end
 
 NS_ASSUME_NONNULL_END

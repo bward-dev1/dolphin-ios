@@ -11,6 +11,8 @@
 
 @implementation ImportFileManager {
   UIWindow* _window;
+  NSMutableArray<NSURL*>* _queuedUrls;
+  BOOL _isImporting;
 }
 
 + (ImportFileManager*)shared {
@@ -47,33 +49,66 @@
 }
 
 - (void)importFileAtUrl:(NSURL*)url {
-  UIWindowScene* mainScene = [MainSceneCoordinator shared].mainScene;
-  
-  if (mainScene == nil) {
+  [self importFilesAtUrls:@[url]];
+}
+
+- (void)importFilesAtUrls:(NSArray<NSURL*>*)urls {
+  if (self->_queuedUrls == nil) {
+    self->_queuedUrls = [[NSMutableArray alloc] init];
+  }
+
+  [self->_queuedUrls addObjectsFromArray:urls];
+
+  [self processNextQueuedImportIfNeeded];
+}
+
+// importFileAtUrl's Copy/Move/Cancel alert and single shared _window can only handle one file
+// at a time - this pops one URL off the queue, runs the existing per-file flow, and (via
+// finish() below) calls itself again for the next one once the user has responded.
+- (void)processNextQueuedImportIfNeeded {
+  if (self->_isImporting || self->_queuedUrls.count == 0) {
     return;
   }
-  
+
+  NSURL* url = [self->_queuedUrls firstObject];
+  [self->_queuedUrls removeObjectAtIndex:0];
+
+  self->_isImporting = true;
+
+  UIWindowScene* mainScene = [MainSceneCoordinator shared].mainScene;
+
+  if (mainScene == nil) {
+    self->_isImporting = false;
+    return;
+  }
+
   [self showWindowOnScene:mainScene];
-  
+
   if (![url startAccessingSecurityScopedResource]) {
     UIAlertController* errorAlert = [UIAlertController alertControllerWithTitle:DOLCoreLocalizedString(@"Error") message:@"Failed to start accessing security scoped resource." preferredStyle:UIAlertControllerStyleAlert];
     
     [errorAlert addAction:[UIAlertAction actionWithTitle:DOLCoreLocalizedString(@"OK") style:UIAlertActionStyleDefault
       handler:^(UIAlertAction* action) {
       [self hideWindow];
+
+      self->_isImporting = false;
+      [self processNextQueuedImportIfNeeded];
     }]];
-    
+
     [self presentViewControllerOnWindow:errorAlert];
-    
+
     return;
   }
-  
+
   void (^finish)(void) = ^void() {
     [url stopAccessingSecurityScopedResource];
-    
+
     [self hideWindow];
-    
+
     [[NSNotificationCenter defaultCenter] postNotificationName:DOLImportFileFinishedNotification object:self userInfo:nil];
+
+    self->_isImporting = false;
+    [self processNextQueuedImportIfNeeded];
   };
   
   NSString* sourcePath = [url path];
