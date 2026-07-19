@@ -175,6 +175,30 @@
   _userRequestedPause = userRequestedPause;
 }
 
+- (void)captureScreenshotWithCompletion:(void (^)(UIImage* _Nullable))completion {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    if (self->_mtkView.window == nil) {
+      completion(nil);
+      return;
+    }
+
+    UIGraphicsImageRendererFormat* format = [UIGraphicsImageRendererFormat preferredFormat];
+    format.opaque = true;
+
+    UIGraphicsImageRenderer* renderer = [[UIGraphicsImageRenderer alloc] initWithSize:self->_mtkView.bounds.size format:format];
+
+    UIImage* image = [renderer imageWithActions:^(UIGraphicsImageRendererContext* context) {
+      // afterScreenUpdates:NO is safe (and preferred - avoids a visible re-render pass) since
+      // we're capturing an already-rendered frame that's already on screen, not one we just
+      // changed and need to force-flush. This works for CAMetalLayer-backed views on iOS,
+      // unlike CALayer's older renderInContext:, which doesn't render Metal content at all.
+      [self->_mtkView drawViewHierarchyInRect:self->_mtkView.bounds afterScreenUpdates:NO];
+    }];
+
+    completion(image);
+  });
+}
+
 - (void)clearMetalLayer {
   id<CAMetalDrawable> drawable = [_metalLayer nextDrawable];
   

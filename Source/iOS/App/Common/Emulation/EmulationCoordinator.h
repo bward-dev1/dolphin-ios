@@ -5,6 +5,7 @@
 
 @class EmulationBootParameter;
 @class UIView;
+@class UIImage;
 
 NSString* const DOLEmulationDidStartNotification = @"DOLEmulationDidStartNotification";
 NSString* const DOLEmulationDidEndNotification = @"DOLEmulationDidEndNotification";
@@ -22,6 +23,9 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)registerExternalDisplayView:(UIView*)externalView;
 - (void)runEmulationWithBootParameter:(EmulationBootParameter*)bootParameter;
 - (void)clearMetalLayer;
+// Snapshots whatever's currently on screen in the emulation view. completion is called on the
+// main queue with nil if the view isn't currently in a window (e.g. called too early/late).
+- (void)captureScreenshotWithCompletion:(void (^)(UIImage* _Nullable))completion;
 
 @end
 

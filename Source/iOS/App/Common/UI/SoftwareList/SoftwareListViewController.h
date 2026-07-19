@@ -12,15 +12,19 @@ enum class Region;
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface SoftwareListViewController : UICollectionViewController<UICollectionViewDelegateFlowLayout> {
+@interface SoftwareListViewController : UICollectionViewController<UICollectionViewDelegateFlowLayout, UISearchResultsUpdating> {
   // The full, unsorted/unfiltered library, refreshed on each rescan.
   NSArray<GameFilePtrWrapper*>* _allGameFiles;
-  // What's actually shown - _allGameFiles after the current sort mode and favorites-only filter
-  // are applied. Every existing index-based lookup (cellForItemAtIndexPath, context menu, etc)
-  // reads this, unchanged from before sorting/filtering existed.
+  // What's actually shown - _allGameFiles after the current search text, sort mode, and
+  // favorites-only filter are applied. Every existing index-based lookup
+  // (cellForItemAtIndexPath, context menu, etc) reads this, unchanged from before
+  // sorting/filtering existed.
   NSArray<GameFilePtrWrapper*>* _gameFiles;
   GameFilePtrWrapper* _selectedFile;
   EmulationBootParameter* _bootParameter;
+  // Transient, not persisted like GameLibraryPreferences' sort/favorites state - a fresh launch
+  // (or leaving and re-entering the library) should always start with an empty search.
+  NSString* _searchText;
 }
 
 - (void)reloadGameFiles;

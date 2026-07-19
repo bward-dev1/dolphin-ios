@@ -29,6 +29,21 @@
 
   self->_allGameFiles = [[GameFileCacheManager sharedManager] getGames];
   [self refreshSortAndFilter];
+
+  UISearchController* searchController = [[UISearchController alloc] initWithSearchResultsController:nil];
+  searchController.searchResultsUpdater = self;
+  searchController.obscuresBackgroundDuringPresentation = false;
+  searchController.searchBar.placeholder = DOLCoreLocalizedString(@"Search Games");
+
+  self.navigationItem.searchController = searchController;
+  self.navigationItem.hidesSearchBarWhenScrolling = true;
+  self.definesPresentationContext = true;
+}
+
+- (void)updateSearchResultsForSearchController:(UISearchController*)searchController {
+  self->_searchText = searchController.searchBar.text;
+
+  [self refreshSortAndFilter];
 }
 
 - (void)viewDidAppear:(BOOL)animated {
@@ -49,6 +64,17 @@
 - (void)refreshSortAndFilter {
   GameLibraryPreferences* prefs = [GameLibraryPreferences shared];
   NSArray<GameFilePtrWrapper*>* source = self->_allGameFiles ?: @[];
+
+  if (self->_searchText.length > 0) {
+    NSMutableArray<GameFilePtrWrapper*>* filtered = [NSMutableArray array];
+    for (GameFilePtrWrapper* wrapper in source) {
+      NSString* name = CppToFoundationString(wrapper.gameFile->GetName(UICommon::GameFile::Variant::LongAndPossiblyCustom));
+      if ([name rangeOfString:self->_searchText options:NSCaseInsensitiveSearch].location != NSNotFound) {
+        [filtered addObject:wrapper];
+      }
+    }
+    source = filtered;
+  }
 
   if (prefs.favoritesOnly) {
     NSMutableArray<GameFilePtrWrapper*>* filtered = [NSMutableArray array];

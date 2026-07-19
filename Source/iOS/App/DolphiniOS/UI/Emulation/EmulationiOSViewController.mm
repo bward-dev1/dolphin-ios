@@ -247,7 +247,12 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
       [self.navigationController setNavigationBarHidden:true animated:true];
     }]
   ]]];
-  
+  [menuItems addObject:[UIMenu menuWithTitle:@"" image:nil identifier:nil options:UIMenuOptionsDisplayInline children:@[
+    [UIAction actionWithTitle:DOLCoreLocalizedString(@"Take Screenshot") image:[UIImage systemImageNamed:@"camera"] identifier:nil handler:^(UIAction*) {
+      [self takeScreenshot];
+    }]
+  ]]];
+
   if ([self emulateSkylanderPortal] && Core::System::GetInstance().IsWii()) {
     [menuItems addObject:[UIMenu menuWithTitle:DOLCoreLocalizedString(@"Tools") image:nil identifier:nil options:UIMenuOptionsDisplayInline
                  children:@[
@@ -365,6 +370,27 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
   [alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
 
   [self presentViewController:alert animated:YES completion:nil];
+}
+
+// Haptic-only feedback rather than a modal alert -- a screenshot should never interrupt
+// gameplay the way a tap-to-dismiss dialog would.
+- (void)takeScreenshot {
+  [[EmulationCoordinator shared] captureScreenshotWithCompletion:^(UIImage* _Nullable image) {
+    UINotificationFeedbackGenerator* feedback = [[UINotificationFeedbackGenerator alloc] init];
+
+    if (image == nil) {
+      [feedback notificationOccurred:UINotificationFeedbackTypeError];
+      return;
+    }
+
+    UIImageWriteToSavedPhotosAlbum(image, self, @selector(screenshot:didFinishSavingWithError:contextInfo:), (__bridge void*)feedback);
+  }];
+}
+
+- (void)screenshot:(UIImage*)image didFinishSavingWithError:(NSError* _Nullable)error contextInfo:(void*)contextInfo {
+  UINotificationFeedbackGenerator* feedback = (__bridge UINotificationFeedbackGenerator*)contextInfo;
+
+  [feedback notificationOccurred:error == nil ? UINotificationFeedbackTypeSuccess : UINotificationFeedbackTypeError];
 }
 
 - (void)viewDidLayoutSubviews {

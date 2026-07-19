@@ -197,6 +197,8 @@
 	</array>
 	<key>NSMotionUsageDescription</key>
 	<string>Move the device to aim the Wii Remote pointer in games that use motion controls.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Save in-game screenshots to your Photos library.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
