@@ -49,7 +49,16 @@ class TCButton: UIButton
 
   @objc func updateImage()
   {
-    let buttonType = TCButtonType(rawValue: controllerButton)!
+    // updateImage() fires on every live TCButton whenever any skin changes
+    // (skinChangedNotification is broadcast, not targeted), including buttons
+    // mid-teardown or in states this class doesn't fully control -- a bad
+    // controllerButton value here used to crash the whole app instead of
+    // just leaving this one button's image unset.
+    guard let buttonType = TCButtonType(rawValue: controllerButton) else
+    {
+      NSLog("TCButton: updateImage() called with unrecognized controllerButton %d, skipping", controllerButton)
+      return
+    }
 
     let buttonImage = getImage(named: buttonType.getImageName(), scale: buttonType.getButtonScale())
     self.setImage(buttonImage, for: .normal)
@@ -61,8 +70,15 @@ class TCButton: UIButton
   func getImage(named: String, scale: CGFloat) -> UIImage
   {
     // In Interface Builder, the default bundle is not Dolphin's, so we must specify
-    // the bundle for the image to load correctly
-    let defaultImage = UIImage(named: named, in: Bundle(for: type(of: self)), compatibleWith: nil)!
+    // the bundle for the image to load correctly. A missing bundle asset should
+    // never happen for a real button name, but this is reachable from a custom
+    // skin's notification firing on every button, so fail soft with a blank
+    // placeholder instead of crashing the whole app over one missing image.
+    guard let defaultImage = UIImage(named: named, in: Bundle(for: type(of: self)), compatibleWith: nil) else
+    {
+      NSLog("TCButton: missing bundled image \"%@\", using blank placeholder", named)
+      return UIImage()
+    }
 
     // A custom controller skin can override this specific image; falls back to the
     // bundled default if the active skin doesn't provide it.
@@ -74,7 +90,7 @@ class TCButton: UIButton
     // Render the image into a context
     UIGraphicsBeginImageContext(newSize)
     image.draw(in: CGRect(origin: CGPoint.zero, size: newSize))
-    let newImage = UIGraphicsGetImageFromCurrentImageContext()!
+    let newImage = UIGraphicsGetImageFromCurrentImageContext() ?? image
     UIGraphicsEndImageContext()
 
     return newImage.withRenderingMode(.alwaysOriginal)

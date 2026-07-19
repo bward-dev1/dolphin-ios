@@ -32,7 +32,13 @@ class TCJoystick: UIView
     self.addSubview(rangeImage)
     
     // Create handle
-    let handleView = createImageView(imageName: TCButtonType(rawValue: joystickType)!.getImageName())
+    guard let buttonType = TCButtonType(rawValue: joystickType) else
+    {
+      NSLog("TCJoystick: unrecognized joystickType %d, skipping handle image", joystickType)
+      return
+    }
+
+    let handleView = createImageView(imageName: buttonType.getImageName())
     let panHandler = UIPanGestureRecognizer(target: self, action: #selector(handlePan))
     handleView.isUserInteractionEnabled = true
     handleView.addGestureRecognizer(panHandler)

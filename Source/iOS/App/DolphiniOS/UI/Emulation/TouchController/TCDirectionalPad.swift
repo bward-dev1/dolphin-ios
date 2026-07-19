@@ -59,8 +59,15 @@ class TCDirectionalPad: UIView
   func getImage(imageName: String) -> UIImage
   {
     // In Interface Builder, the default bundle is not Dolphin's, so we must specify
-    // the bundle for the image to load correctly
-    return UIImage(named: imageName, in: Bundle(for: type(of: self)), compatibleWith: nil)!
+    // the bundle for the image to load correctly. Fail soft rather than crash the
+    // whole app over one missing bundle asset.
+    guard let image = UIImage(named: imageName, in: Bundle(for: type(of: self)), compatibleWith: nil) else
+    {
+      NSLog("TCDirectionalPad: missing bundled image \"%@\", using blank placeholder", imageName)
+      return UIImage()
+    }
+
+    return image
   }
   
   @objc func handleLongPress(gesture: UILongPressGestureRecognizer)
