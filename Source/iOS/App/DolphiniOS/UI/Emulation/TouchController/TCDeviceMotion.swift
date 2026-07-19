@@ -184,12 +184,16 @@ import Foundation
   // "Calibrate gyroscope": lay the device perfectly flat and still, then call this. It
   // measures the resting gyro bias over ~0.6s and subtracts it from all future readings,
   // eliminating the slow pointer/motion drift you otherwise fight during Wii games.
-  // `completion` fires on the main queue once sampling finishes (or immediately if motion
-  // isn't running).
+  // `completion` fires on the main queue once sampling finishes.
+  //
+  // Used to require motionEnabled to already be true, silently firing completion without
+  // calibrating anything if it wasn't — normally harmless since the touch-pad-attach flow
+  // enables motion before the user can reach this menu, but any gap in that chain made
+  // calibration look like it worked ("Gyroscope Calibrated") while doing nothing. Now
+  // self-heals: turns motion on here if needed instead of assuming it already is.
   @objc func calibrateFlat(_ completion: (() -> Void)?) {
-    guard self.motionEnabled else {
-      completion?()
-      return
+    if !self.motionEnabled {
+      self.setMotionEnabled(true)
     }
 
     self.calibrationSamples = 0
