@@ -21,20 +21,20 @@ class PreGameCalibrationViewController: UIViewController {
   ])
 
   private let flatFacingControl = UISegmentedControl(items: [
-    DOLCoreLocalizedString("Screen Up"),
-    DOLCoreLocalizedString("Screen Down")
+    DOLCoreLocalizedString("Screen faces up"),
+    DOLCoreLocalizedString("Screen faces down")
   ])
 
   private let calibrationModeControl = UISegmentedControl(items: [
     DOLCoreLocalizedString("Point at TV"),
-    DOLCoreLocalizedString("Point at Device")
+    DOLCoreLocalizedString("Point at device")
   ])
 
   private let playingOnTVSwitch = UISwitch()
 
   private let tvSizeControl = UISegmentedControl(items: [
-    DOLCoreLocalizedString("Widescreen"),
-    DOLCoreLocalizedString("Standard")
+    DOLCoreLocalizedString("Widescreen (16:9)"),
+    DOLCoreLocalizedString("Standard (4:3)")
   ])
 
   private let tvTypeControl = UISegmentedControl(items: [
@@ -100,12 +100,12 @@ class PreGameCalibrationViewController: UIViewController {
     ])
 
     let titleLabel = UILabel()
-    titleLabel.text = DOLCoreLocalizedString("Pointer Setup")
+    titleLabel.text = DOLCoreLocalizedString("Pointer Calibration")
     titleLabel.font = .preferredFont(forTextStyle: .largeTitle)
     titleLabel.numberOfLines = 0
 
     let subtitleLabel = UILabel()
-    subtitleLabel.text = DOLCoreLocalizedString("Quickly confirm how you're holding your device so the Wii Remote pointer tracks correctly. This appears before every game.")
+    subtitleLabel.text = DOLCoreLocalizedString("A few quick questions so the Wii Remote pointer aims correctly from the start. This appears before every Wii game -- it only takes a few seconds.")
     subtitleLabel.font = .preferredFont(forTextStyle: .subheadline)
     subtitleLabel.textColor = .secondaryLabel
     subtitleLabel.numberOfLines = 0
@@ -114,17 +114,20 @@ class PreGameCalibrationViewController: UIViewController {
     self.stackView.addArrangedSubview(subtitleLabel)
 
     self.stackView.addArrangedSubview(self.buildSection(
-      title: DOLCoreLocalizedString("How are you holding your device?"),
+      title: DOLCoreLocalizedString("How do you hold your device while playing?"),
+      description: DOLCoreLocalizedString("Upright is one-handed, like a real Wii Remote pointed at the screen. Landscape and Portrait are two-handed, like a normal handheld game. This tells the pointer which way is \"up\" so tilting the device feels natural."),
       control: self.holdOrientationControl
     ))
 
     self.stackView.addArrangedSubview(self.buildSection(
-      title: DOLCoreLocalizedString("When laid flat, which way does the front face?"),
+      title: DOLCoreLocalizedString("When you lay your device flat to calibrate, which way faces up?"),
+      description: DOLCoreLocalizedString("Used for the flat calibration below -- rest your device on a table or your lap, screen up or screen down, then tell us which so the resting position reads as level."),
       control: self.flatFacingControl
     ))
 
     self.stackView.addArrangedSubview(self.buildSection(
-      title: DOLCoreLocalizedString("Calibration mode"),
+      title: DOLCoreLocalizedString("What are you calibrating the pointer to?"),
+      description: DOLCoreLocalizedString("Point at TV centers the pointer wherever you're currently aiming your device -- pick this if you're pointing at a TV or external screen. Point at device keeps the pointer centered relative to how you're holding the device instead, which is better if you're playing handheld with no TV in front of you."),
       control: self.calibrationModeControl
     ))
 
@@ -133,7 +136,7 @@ class PreGameCalibrationViewController: UIViewController {
     tvToggleRow.spacing = 12
 
     let tvToggleLabel = UILabel()
-    tvToggleLabel.text = DOLCoreLocalizedString("Playing on a TV?")
+    tvToggleLabel.text = DOLCoreLocalizedString("Are you playing on a TV?")
     tvToggleLabel.font = .preferredFont(forTextStyle: .headline)
 
     tvToggleRow.addArrangedSubview(tvToggleLabel)
@@ -145,12 +148,14 @@ class PreGameCalibrationViewController: UIViewController {
     self.tvOptionsStack.spacing = 24
 
     self.tvOptionsStack.addArrangedSubview(self.buildSection(
-      title: DOLCoreLocalizedString("Screen size"),
+      title: DOLCoreLocalizedString("What size is your TV screen?"),
+      description: DOLCoreLocalizedString("Widescreen (16:9) is the wide shape almost all modern TVs use. Standard (4:3) is the older, more square shape."),
       control: self.tvSizeControl
     ))
 
     self.tvOptionsStack.addArrangedSubview(self.buildSection(
-      title: DOLCoreLocalizedString("Screen type"),
+      title: DOLCoreLocalizedString("What type of screen is it?"),
+      description: DOLCoreLocalizedString("Helps fine-tune how the pointer responds for your specific display."),
       control: self.tvTypeControl
     ))
 
@@ -183,17 +188,24 @@ class PreGameCalibrationViewController: UIViewController {
     self.stackView.addArrangedSubview(buttonContainer)
   }
 
-  private func buildSection(title: String, control: UISegmentedControl) -> UIView {
+  private func buildSection(title: String, description: String, control: UISegmentedControl) -> UIView {
     let container = UIStackView()
     container.axis = .vertical
     container.spacing = 8
 
-    let label = UILabel()
-    label.text = title
-    label.font = .preferredFont(forTextStyle: .headline)
-    label.numberOfLines = 0
+    let titleLabel = UILabel()
+    titleLabel.text = title
+    titleLabel.font = .preferredFont(forTextStyle: .headline)
+    titleLabel.numberOfLines = 0
 
-    container.addArrangedSubview(label)
+    let descriptionLabel = UILabel()
+    descriptionLabel.text = description
+    descriptionLabel.font = .preferredFont(forTextStyle: .footnote)
+    descriptionLabel.textColor = .secondaryLabel
+    descriptionLabel.numberOfLines = 0
+
+    container.addArrangedSubview(titleLabel)
+    container.addArrangedSubview(descriptionLabel)
     container.addArrangedSubview(control)
 
     return container
