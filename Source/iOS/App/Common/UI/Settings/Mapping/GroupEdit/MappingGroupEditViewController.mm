@@ -39,8 +39,10 @@ typedef NS_ENUM(NSInteger, DOLMappingGroupEditSection) {
 
 - (void)viewDidLoad {
   [super viewDidLoad];
-  
+
   self.navigationItem.title = DOLCoreLocalizedString(CppToFoundationString(self.controlGroup->ui_name));
+
+  _inputLock = [[NSLock alloc] init];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -373,23 +375,29 @@ typedef NS_ENUM(NSInteger, DOLMappingGroupEditSection) {
 
 - (void)processMappingButtons {
   [self->_inputLock lock];
-  
+
   if (!_inputDetector) {
+    [self->_inputLock unlock];
     return;
   }
-  
+
   constexpr auto initial_time = std::chrono::seconds(3);
   constexpr auto confirmation_time = std::chrono::milliseconds(0);
   constexpr auto maximum_time = std::chrono::seconds(5);
-  
+
   _inputDetector->Update(initial_time, confirmation_time, maximum_time);
-  
+
   if (!_inputDetector->IsComplete()) {
+    [self->_inputLock unlock];
     return;
   }
-  
+
   auto results = _inputDetector->TakeResults();
-  
+
+  // Release before the UI/dispatch work below — nothing past this point
+  // touches _inputDetector or other lock-protected state.
+  [self->_inputLock unlock];
+
   if (ciface::MappingCommon::ContainsCompleteDetection(results)) {
     std::string expression = BuildExpression(results, self.controller->GetDefaultDevice(), ciface::MappingCommon::Quote::On);
     
