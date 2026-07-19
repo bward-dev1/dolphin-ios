@@ -10,7 +10,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface EmulationViewController : UIViewController <JitWaitViewControllerDelegate, NKitWarningViewControllerDelegate>
+@interface EmulationViewController : UIViewController <JitWaitViewControllerDelegate, NKitWarningViewControllerDelegate, PreGameCalibrationViewControllerDelegate>
 
 @property (weak, nonatomic) IBOutlet UIView* rendererView;
 

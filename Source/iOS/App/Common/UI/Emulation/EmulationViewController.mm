@@ -77,9 +77,9 @@
     } else if ([self checkIfNeedToShowNKitWarning]) {
       [self showNKitWarning];
     } else {
-      [self startEmulation];
+      [self showPreGameCalibration];
     }
-    
+
     _didStartEmulation = true;
   }
 }
@@ -105,7 +105,7 @@
     if ([self checkIfNeedToShowNKitWarning]) {
       [self showNKitWarning];
     } else {
-      [self startEmulation];
+      [self showPreGameCalibration];
     }
   }];
 }
@@ -129,10 +129,28 @@
 - (void)didFinishNKitWarningScreenWithResult:(BOOL)result sender:(id)sender {
   [self dismissViewControllerAnimated:true completion:^{
     if (result) {
-      [self startEmulation];
+      [self showPreGameCalibration];
     } else {
       [self.navigationController dismissViewControllerAnimated:true completion:nil];
     }
+  }];
+}
+
+// Shown unconditionally right before every boot, regardless of which path got here (JIT
+// acquired, JIT not required, or an accepted NKit warning) -- this is the single funnel point
+// so the calibration screen can never be skipped.
+- (void)showPreGameCalibration {
+  PreGameCalibrationViewController* calibrationController = [[PreGameCalibrationViewController alloc] init];
+  calibrationController.delegate = self;
+  calibrationController.modalPresentationStyle = UIModalPresentationFullScreen;
+  calibrationController.modalInPresentation = true;
+
+  [self presentViewController:calibrationController animated:true completion:nil];
+}
+
+- (void)didFinishPreGameCalibrationScreenWithSender:(id)sender {
+  [self dismissViewControllerAnimated:true completion:^{
+    [self startEmulation];
   }];
 }
 

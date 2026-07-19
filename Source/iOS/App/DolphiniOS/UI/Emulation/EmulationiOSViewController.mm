@@ -44,6 +44,7 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
 @implementation EmulationiOSViewController {
   DOLEmulationVisibleTouchPad _visibleTouchPad;
   int _stateSlot;
+  bool _didApplyPreGameTVCalibration;
 }
 
 - (void)viewDidLoad {
@@ -459,6 +460,20 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
   [self updateVisibleTouchPadWithType:targetTouchPad];
 
   [self updatePointerValuesOnWiiTouchPads];
+
+  // The pre-game calibration screen already ran the flat gyro-bias calibration before boot
+  // (that part doesn't need the core running). If the player chose "Point at TV" mode there,
+  // finish the job now that the Wiimote pointer is actually live: switch Touch IR Pointer to
+  // Motion and recenter on their current, presumably-still-aimed-at-the-TV orientation. Only
+  // once per session -- later title changes (e.g. Wii Menu handing off to the game) shouldn't
+  // re-recenter using whatever orientation the device happens to be in at that later moment.
+  if (!_didApplyPreGameTVCalibration &&
+      [[PreGameCalibrationPreferences shared] calibrationMode] == PointerCalibrationModePointAtTV) {
+    _didApplyPreGameTVCalibration = true;
+
+    [self switchToMotionPointingIfNeeded];
+    [[TCDeviceMotion shared] recenterPointer];
+  }
 }
 
 - (void)updateVisibleTouchPadToGameCube {

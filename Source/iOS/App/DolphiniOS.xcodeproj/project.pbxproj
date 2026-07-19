@@ -238,6 +238,9 @@
 		B9FCB7CE2897998B0020E233 /* JitWaitViewControllerDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9FCB7CD2897998B0020E233 /* JitWaitViewControllerDelegate.swift */; };
 		B9FCB7D22897B9D60020E233 /* NKitWarningViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = B9FCB7D12897B9D60020E233 /* NKitWarningViewController.mm */; };
 		B9FCB7D42897C7D80020E233 /* NKitWarningViewControllerDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9FCB7D32897C7D80020E233 /* NKitWarningViewControllerDelegate.swift */; };
+		1508751A65BA452E8CB16D7F /* PreGameCalibrationPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F08A9DD3DC14521BA5C34DD /* PreGameCalibrationPreferences.swift */; };
+		A404854F80E546FB99694BE0 /* PreGameCalibrationViewControllerDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECC42FC5CC3B451E987EB3B8 /* PreGameCalibrationViewControllerDelegate.swift */; };
+		E7D56805AFB44C229F863D59 /* PreGameCalibrationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C32F7CFFACC44E39876888E /* PreGameCalibrationViewController.swift */; };
 		B9FCB7D8289841730020E233 /* MsgAlertManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = B9FCB7D7289841730020E233 /* MsgAlertManager.mm */; };
 		B9FCB7DB28988E4C0020E233 /* JitManager+AltServer.m in Sources */ = {isa = PBXBuildFile; fileRef = B9FCB7DA28988E4B0020E233 /* JitManager+AltServer.m */; };
 		B9FCB7DE28988E7E0020E233 /* AltKit in Frameworks */ = {isa = PBXBuildFile; productRef = B9FCB7DD28988E7E0020E233 /* AltKit */; };
@@ -669,6 +672,9 @@
 		B9FCB7D02897B9D60020E233 /* NKitWarningViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NKitWarningViewController.h; sourceTree = "<group>"; };
 		B9FCB7D12897B9D60020E233 /* NKitWarningViewController.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = NKitWarningViewController.mm; sourceTree = "<group>"; };
 		B9FCB7D32897C7D80020E233 /* NKitWarningViewControllerDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NKitWarningViewControllerDelegate.swift; sourceTree = "<group>"; };
+		4F08A9DD3DC14521BA5C34DD /* PreGameCalibrationPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreGameCalibrationPreferences.swift; sourceTree = "<group>"; };
+		ECC42FC5CC3B451E987EB3B8 /* PreGameCalibrationViewControllerDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreGameCalibrationViewControllerDelegate.swift; sourceTree = "<group>"; };
+		6C32F7CFFACC44E39876888E /* PreGameCalibrationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreGameCalibrationViewController.swift; sourceTree = "<group>"; };
 		B9FCB7D6289841730020E233 /* MsgAlertManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MsgAlertManager.h; sourceTree = "<group>"; };
 		B9FCB7D7289841730020E233 /* MsgAlertManager.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MsgAlertManager.mm; sourceTree = "<group>"; };
 		B9FCB7D928988E4B0020E233 /* JitManager+AltServer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "JitManager+AltServer.h"; sourceTree = "<group>"; };
@@ -1148,6 +1154,7 @@
 			children = (
 				B9FCB7C328976C340020E233 /* JitWait */,
 				B9FCB7CF2897B9A90020E233 /* NKitWarning */,
+				4E7761498B054F28903DB5D5 /* PreGameCalibration */,
 				B9D9388D283DE3C800B290FC /* EmulationViewController.h */,
 				B9D9388E283DE3C800B290FC /* EmulationViewController.mm */,
 			);
@@ -1974,6 +1981,16 @@
 			path = NKitWarning;
 			sourceTree = "<group>";
 		};
+		4E7761498B054F28903DB5D5 /* PreGameCalibration */ = {
+			isa = PBXGroup;
+			children = (
+				6C32F7CFFACC44E39876888E /* PreGameCalibrationViewController.swift */,
+				ECC42FC5CC3B451E987EB3B8 /* PreGameCalibrationViewControllerDelegate.swift */,
+				4F08A9DD3DC14521BA5C34DD /* PreGameCalibrationPreferences.swift */,
+			);
+			path = PreGameCalibration;
+			sourceTree = "<group>";
+		};
 		B9FCB7D5289841600020E233 /* Alert */ = {
 			isa = PBXGroup;
 			children = (
@@ -2352,6 +2369,9 @@
 				B904ACBE28851C5C008B6BE9 /* GraphicsBackendCell.m in Sources */,
 				B950CFC92962562200197719 /* main.m in Sources */,
 				B9FCB7D42897C7D80020E233 /* NKitWarningViewControllerDelegate.swift in Sources */,
+				1508751A65BA452E8CB16D7F /* PreGameCalibrationPreferences.swift in Sources */,
+				A404854F80E546FB99694BE0 /* PreGameCalibrationViewControllerDelegate.swift in Sources */,
+				E7D56805AFB44C229F863D59 /* PreGameCalibrationViewController.swift in Sources */,
 				B960AFF1295FB45500A246F0 /* TCDeviceMotion.swift in Sources */,
 				ECB733167F844E5A95B9B9A2 /* TCSkinManager.swift in Sources */,
 				3A6A42C2088B426989F2FB87 /* ControllersSkinsViewController.mm in Sources */,
