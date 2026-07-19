@@ -139,11 +139,17 @@
   }
   
   [[NSNotificationCenter defaultCenter] postNotificationName:DOLEmulationDidStartNotification object:self userInfo:nil];
-  
-  while (Core::IsRunning(Core::System::GetInstance())) {
+
+  // Core::IsRunning() is only true for State::Running -- it's false for State::Paused too.
+  // applicationWillResignActive: sets Paused for *any* momentary interruption (Control Center,
+  // a system alert, an edge multitasking gesture), not just a real backgrounding. Polling on
+  // IsRunning() here would treat a sub-second pause blip as "emulation ended," firing the
+  // DidEnd cleanup (which disables the gyro pointer for good) while the core silently resumes
+  // and gameplay continues normally. Wait for the actual terminal state instead.
+  while (Core::GetState(Core::System::GetInstance()) != Core::State::Uninitialized) {
     [NSThread sleepForTimeInterval:0.025];
   }
-  
+
   dispatch_sync(dispatch_get_main_queue(), ^{
     Core::DeclareAsHostThread();
   });
