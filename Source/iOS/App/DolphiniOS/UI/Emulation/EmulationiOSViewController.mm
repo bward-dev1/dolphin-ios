@@ -8,6 +8,7 @@
 #import "Common/IOFile.h"
 
 #import "Core/ConfigManager.h"
+#import "Core/Config/GraphicsSettings.h"
 #import "Core/Config/iOSSettings.h"
 #import "Core/Config/MainSettings.h"
 #import "Core/Config/WiimoteSettings.h"
