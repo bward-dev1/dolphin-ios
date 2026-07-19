@@ -11,65 +11,94 @@ class TCDirectionalPad: UIView
   var dpadNoPressed: UIImage? = nil
   var dpadOnePressed: UIImage? = nil
   var dpadTwoPressed: UIImage? = nil
-  
+
+  // Kept so updateImages() (fired on skin change) can refresh what's currently on screen -
+  // previously a local var in sharedInit(), so a skin change while this pad was visible had
+  // no way to reach it.
+  private var imageView: UIImageView? = nil
+
   @IBInspectable var directionalPadType: Int = 6 // default: GC D-Pad
-  
+
   var port: Int = 0
   var isPressed: Bool = false
-  
+
   override init(frame: CGRect)
   {
     super.init(frame: frame)
   }
-  
+
   required init?(coder: NSCoder)
   {
     super.init(coder: coder)
   }
-  
+
+  deinit
+  {
+    NotificationCenter.default.removeObserver(self)
+  }
+
   override func awakeFromNib()
   {
     super.awakeFromNib()
     sharedInit()
   }
-  
+
   func sharedInit()
   {
-    // Load image
-    dpadNoPressed = getImage(imageName: "gcwii_dpad")
-    dpadOnePressed = getImage(imageName: "gcwii_dpad_pressed_one_direction")
-    dpadTwoPressed = getImage(imageName: "gcwii_dpad_pressed_two_directions")
-    
+    updateImages()
+
     // Create the image view
     let imageView = UIImageView(frame: CGRect(x: 0, y: 0, width: self.frame.width, height: self.frame.height))
     imageView.image = dpadNoPressed
     imageView.center = self.convert(self.center, from: self.superview)
     imageView.isUserInteractionEnabled = true
-      
+    self.imageView = imageView
+
     let pressHandler = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress))
     pressHandler.minimumPressDuration = 0
     imageView.addGestureRecognizer(pressHandler)
-    
+
     self.addSubview(imageView)
-    
+
     // Set background color to transparent
     self.backgroundColor = UIColor.clear
+
+    NotificationCenter.default.addObserver(self, selector: #selector(updateImages),
+                                            name: TCSkinManager.skinChangedNotification, object: nil)
   }
-  
+
+  @objc func updateImages()
+  {
+    dpadNoPressed = getImage(imageName: "gcwii_dpad")
+    dpadOnePressed = getImage(imageName: "gcwii_dpad_pressed_one_direction")
+    dpadTwoPressed = getImage(imageName: "gcwii_dpad_pressed_two_directions")
+
+    // Only reset to the resting image - if a direction is actively held when the skin
+    // changes, the next touch move/release will naturally pick the right pressed image.
+    if !isPressed
+    {
+      imageView?.image = dpadNoPressed
+    }
+  }
+
   func getImage(imageName: String) -> UIImage
   {
     // In Interface Builder, the default bundle is not Dolphin's, so we must specify
     // the bundle for the image to load correctly. Fail soft rather than crash the
     // whole app over one missing bundle asset.
-    guard let image = UIImage(named: imageName, in: Bundle(for: type(of: self)), compatibleWith: nil) else
+    guard let defaultImage = UIImage(named: imageName, in: Bundle(for: type(of: self)), compatibleWith: nil) else
     {
       NSLog("TCDirectionalPad: missing bundled image \"%@\", using blank placeholder", imageName)
       return UIImage()
     }
 
-    return image
+    // A custom controller skin can override this specific image; falls back to the
+    // bundled default if the active skin doesn't provide it. TCButton has used this same
+    // TCSkinManager path for years - the d-pad and joystick (see TCJoystick) never did,
+    // so every existing skin's dpad/joystick art has silently gone unused until now.
+    return TCSkinManager.shared.image(named: imageName, defaultImage: defaultImage) ?? defaultImage
   }
-  
+
   @objc func handleLongPress(gesture: UILongPressGestureRecognizer)
   {
     let imageView = gesture.view as! UIImageView
