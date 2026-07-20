@@ -658,7 +658,7 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <sections>
-                            <tableViewSection headerTitle="Enhancements" id="iNu-sf-Tdd">
+                            <tableViewSection headerTitle="Resolution &amp; Filtering" id="iNu-sf-Tdd">
                                 <cells>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" accessoryType="detailDisclosureButton" indentationWidth="10" id="h1A-La-3o0" customClass="GraphicsChoiceCell">
                                         <rect key="frame" x="16" y="55.5" width="343" height="43.5"/>
@@ -732,6 +732,10 @@
                                             <segue destination="QRM-wG-zVD" kind="show" id="EBK-fF-QPf"/>
                                         </connections>
                                     </tableViewCell>
+                                </cells>
+                            </tableViewSection>
+                            <tableViewSection headerTitle="Copy &amp; Rendering" id="Enh-cpy-sec">
+                                <cells>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="none" accessoryType="detailButton" indentationWidth="10" id="2NU-oh-T3j" customClass="GraphicsBoolCell">
                                         <rect key="frame" x="16" y="142.5" width="343" height="43.5"/>
                                         <autoresizingMask key="autoresizingMask"/>
@@ -856,6 +860,10 @@
                                             <outlet property="boolSwitch" destination="qLm-DQ-V7V" id="qcG-iN-TNm"/>
                                         </connections>
                                     </tableViewCell>
+                                </cells>
+                            </tableViewSection>
+                            <tableViewSection headerTitle="Color &amp; Compatibility" id="Enh-clr-sec">
+                                <cells>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="none" accessoryType="detailButton" indentationWidth="10" id="CTh-zW-odi" customClass="GraphicsBoolCell">
                                         <rect key="frame" x="16" y="316" width="343" height="43.5"/>
                                         <autoresizingMask key="autoresizingMask"/>
