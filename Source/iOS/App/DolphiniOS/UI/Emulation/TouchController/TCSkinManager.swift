@@ -208,4 +208,28 @@ import UIKit
     let normalizedScale = pixelWidth / defaultPointWidth
     return UIImage(cgImage: cgImage, scale: normalizedScale, orientation: rawImage.imageOrientation)
   }
+
+  // A single representative button image for a skin picker thumbnail - not a full mockup of
+  // the touch layout, just enough for a user to eyeball at a glance whether a skin is e.g. the
+  // silver Wii Remote look or the color-coded GameCube look before selecting it. Tries a few
+  // button names in order since not every skin (particularly partial/mix-and-match ones)
+  // provides all of them; nil skinName means "the bundled default look".
+  private static let previewCandidateNames = ["wiimote_a", "gcpad_a", "gcwii_dpad", "classic_a"]
+
+  @objc(previewImageForSkinNamed:) func previewImage(forSkinNamed skinName: String?) -> UIImage? {
+    let bundle = Bundle(for: TCSkinManager.self)
+
+    for candidate in TCSkinManager.previewCandidateNames {
+      if let skinName {
+        let path = skinsFolder.stringByAppendingPathComponent(skinName).stringByAppendingPathComponent("\(candidate).png")
+        if let image = UIImage(contentsOfFile: path) {
+          return image
+        }
+      } else if let image = UIImage(named: candidate, in: bundle, compatibleWith: nil) {
+        return image
+      }
+    }
+
+    return nil
+  }
 }

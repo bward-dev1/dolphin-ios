@@ -165,16 +165,23 @@ static NSString* const kCellReuseIdentifier = @"ControllersSkinsCell";
                                                            forIndexPath:indexPath];
 
   NSString* activeSkin = [TCSkinManager shared].activeSkinName;
+  NSString* rowSkinName = nil;  // nil means "Default" row
 
   if (indexPath.row == 0) {
     cell.textLabel.text = @"Default";
     cell.accessoryType = (activeSkin == nil) ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
   } else {
-    NSString* name = _skinNames[indexPath.row - 1];
-    cell.textLabel.text = name;
-    cell.accessoryType = [name isEqualToString:activeSkin] ? UITableViewCellAccessoryCheckmark
-                                                             : UITableViewCellAccessoryNone;
+    rowSkinName = _skinNames[indexPath.row - 1];
+    cell.textLabel.text = rowSkinName;
+    cell.accessoryType = [rowSkinName isEqualToString:activeSkin] ? UITableViewCellAccessoryCheckmark
+                                                                   : UITableViewCellAccessoryNone;
   }
+
+  cell.imageView.image = [[TCSkinManager shared] previewImageForSkinNamed:rowSkinName];
+  cell.imageView.contentMode = UIViewContentModeScaleAspectFit;
+  cell.imageView.layer.cornerRadius = 6;
+  cell.imageView.layer.masksToBounds = YES;
+  cell.imageView.frame = CGRectMake(0, 0, 36, 36);
 
   return cell;
 }
