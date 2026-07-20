@@ -43,6 +43,7 @@
                                 <state key="normal" image="arrow.down.circle" catalog="system">
                                     <preferredSymbolConfiguration key="preferredSymbolConfiguration" scale="large"/>
                                 </state>
+                                <accessibility key="accessibilityConfiguration" label="Show Menu" hint="Opens save states, controller settings, mute, and other in-game options."/>
                                 <connections>
                                     <action selector="pullDownPressed:" destination="Y6W-OH-hqX" eventType="touchUpInside" id="qWD-UH-ORZ"/>
                                 </connections>
