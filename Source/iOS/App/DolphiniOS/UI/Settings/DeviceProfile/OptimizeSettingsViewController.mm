@@ -23,6 +23,15 @@ typedef NS_ENUM(NSInteger, OptimizeRow) {
   return [super initWithStyle:UITableViewStyleInsetGrouped];
 }
 
+- (void)viewWillAppear:(BOOL)animated {
+  [super viewWillAppear:animated];
+
+  // Re-check JIT/etc every time this screen appears (not just once at init) so the preview
+  // below stays accurate if e.g. JIT status changed since the user last looked at this screen.
+  [[DeviceProfile shared] refresh];
+  [self.tableView reloadData];
+}
+
 - (void)viewDidLoad {
   [super viewDidLoad];
 
@@ -62,30 +71,54 @@ typedef NS_ENUM(NSInteger, OptimizeRow) {
 
 #pragma mark - UITableViewDataSource
 
+typedef NS_ENUM(NSInteger, OptimizeSection) {
+  OptimizeSectionDetected,
+  OptimizeSectionPreview,
+  OptimizeSectionCount,
+};
+
 - (NSInteger)numberOfSectionsInTableView:(UITableView*)tableView {
-  return 1;
+  return OptimizeSectionCount;
 }
 
 - (NSInteger)tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section {
+  if (section == OptimizeSectionPreview) {
+    return [DeviceProfile shared].previewSettingsDescriptions.count;
+  }
+
   return OptimizeRowCount;
 }
 
 - (nullable NSString*)tableView:(UITableView*)tableView titleForHeaderInSection:(NSInteger)section {
-  return @"Detected Automatically";
+  return section == OptimizeSectionPreview ? @"Will Apply" : @"Detected Automatically";
 }
 
 - (nullable NSString*)tableView:(UITableView*)tableView titleForFooterInSection:(NSInteger)section {
+  if (section != OptimizeSectionPreview) {
+    return nil;
+  }
+
   return [DeviceProfile shared].tierSummary;
 }
 
 - (UITableViewCell*)tableView:(UITableView*)tableView cellForRowAtIndexPath:(NSIndexPath*)indexPath {
+  DeviceProfile* profile = [DeviceProfile shared];
+
+  if (indexPath.section == OptimizeSectionPreview) {
+    UITableViewCell* cell = [tableView dequeueReusableCellWithIdentifier:@"PreviewCell"];
+    if (cell == nil) {
+      cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"PreviewCell"];
+    }
+    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+    cell.textLabel.text = profile.previewSettingsDescriptions[indexPath.row];
+    return cell;
+  }
+
   UITableViewCell* cell = [tableView dequeueReusableCellWithIdentifier:@"Cell"];
   if (cell == nil) {
     cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"Cell"];
   }
   cell.selectionStyle = UITableViewCellSelectionStyleNone;
-
-  DeviceProfile* profile = [DeviceProfile shared];
 
   switch ((OptimizeRow)indexPath.row) {
   case OptimizeRowDevice:

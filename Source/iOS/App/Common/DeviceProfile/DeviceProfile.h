@@ -49,6 +49,12 @@ typedef NS_ENUM(NSInteger, DevicePerformanceTier) {
 // compatibility need, not a device-performance dial - see the comment in applyOptimizedSettings.
 - (void)applyOptimizedSettings;
 
+// One human-readable line per setting applyOptimizedSettings would change for the CURRENT tier,
+// e.g. "Internal Resolution: 2x" - computed the same way applyOptimizedSettings decides values,
+// but read-only, so a caller (the Optimize Settings screen) can show what tapping Apply will
+// actually do before the user commits to it.
+- (NSArray<NSString*>*)previewSettingsDescriptions;
+
 @end
 
 NS_ASSUME_NONNULL_END

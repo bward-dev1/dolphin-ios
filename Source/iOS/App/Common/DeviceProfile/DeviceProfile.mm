@@ -192,10 +192,38 @@ static NSDictionary<NSString*, NSString*>* DeviceIdentifierToChipName() {
   }
 }
 
+namespace {
+// Single source of truth for what a tier means in terms of real settings values - both
+// applyOptimizedSettings and previewSettingsDescriptions read from this, so the preview a user
+// sees before tapping Apply can never drift out of sync with what Apply actually does.
+struct TierSettings {
+  int efb_scale;
+  bool cpu_thread;
+  bool vsync;
+  bool dsp_hle;
+  int texture_cache_samples;
+  bool sync_gpu;
+};
+
+TierSettings SettingsForTier(DevicePerformanceTier tier) {
+  switch (tier) {
+  case DevicePerformanceTierUltra:
+    return {0, true, true, false, 0, true};
+  case DevicePerformanceTierHigh:
+    return {2, true, true, false, 512, false};
+  case DevicePerformanceTierMedium:
+    return {1, false, true, true, 128, false};
+  case DevicePerformanceTierLow:
+  default:
+    return {1, false, false, true, 128, false};
+  }
+}
+}  // namespace
+
 - (void)applyOptimizedSettings {
   [self refresh];
 
-  DevicePerformanceTier tier = self.tier;
+  const TierSettings settings = SettingsForTier(self.tier);
 
   // MMU emulation is deliberately never touched here. Whether a title needs it is a per-game
   // compatibility requirement handled by Dolphin's own per-game .ini overrides (see
@@ -203,44 +231,12 @@ static NSDictionary<NSString*, NSString*>* DeviceIdentifierToChipName() {
   // would cost real overhead on titles that don't need it, and forcing it off for every
   // lower-tier game could break the rare title that does and doesn't have a curated override
   // yet. Leave whatever value the user or the per-game layer already has.
-  switch (tier) {
-  case DevicePerformanceTierUltra:
-    // 0 = EFB_SCALE_AUTO_INTEGRAL: scales to match the actual render surface, not a fixed
-    // numeric multiplier - usually the sharpest option on a full-screen device, but not a
-    // guaranteed max (e.g. a smaller Split View pane would auto-scale lower too).
-    Config::SetBaseOrCurrent(Config::GFX_EFB_SCALE, 0);
-    Config::SetBaseOrCurrent(Config::MAIN_CPU_THREAD, true);
-    Config::SetBaseOrCurrent(Config::GFX_VSYNC, true);
-    Config::SetBaseOrCurrent(Config::MAIN_DSP_HLE, false);
-    Config::SetBaseOrCurrent(Config::GFX_SAFE_TEXTURE_CACHE_COLOR_SAMPLES, 0);
-    Config::SetBaseOrCurrent(Config::MAIN_SYNC_GPU, true);
-    break;
-  case DevicePerformanceTierHigh:
-    Config::SetBaseOrCurrent(Config::GFX_EFB_SCALE, 2);
-    Config::SetBaseOrCurrent(Config::MAIN_CPU_THREAD, true);
-    Config::SetBaseOrCurrent(Config::GFX_VSYNC, true);
-    Config::SetBaseOrCurrent(Config::MAIN_DSP_HLE, false);
-    Config::SetBaseOrCurrent(Config::GFX_SAFE_TEXTURE_CACHE_COLOR_SAMPLES, 512);
-    Config::SetBaseOrCurrent(Config::MAIN_SYNC_GPU, false);
-    break;
-  case DevicePerformanceTierMedium:
-    Config::SetBaseOrCurrent(Config::GFX_EFB_SCALE, 1);
-    Config::SetBaseOrCurrent(Config::MAIN_CPU_THREAD, false);
-    Config::SetBaseOrCurrent(Config::GFX_VSYNC, true);
-    Config::SetBaseOrCurrent(Config::MAIN_DSP_HLE, true);
-    Config::SetBaseOrCurrent(Config::GFX_SAFE_TEXTURE_CACHE_COLOR_SAMPLES, 128);
-    Config::SetBaseOrCurrent(Config::MAIN_SYNC_GPU, false);
-    break;
-  case DevicePerformanceTierLow:
-  default:
-    Config::SetBaseOrCurrent(Config::GFX_EFB_SCALE, 1);
-    Config::SetBaseOrCurrent(Config::MAIN_CPU_THREAD, false);
-    Config::SetBaseOrCurrent(Config::GFX_VSYNC, false);
-    Config::SetBaseOrCurrent(Config::MAIN_DSP_HLE, true);
-    Config::SetBaseOrCurrent(Config::GFX_SAFE_TEXTURE_CACHE_COLOR_SAMPLES, 128);
-    Config::SetBaseOrCurrent(Config::MAIN_SYNC_GPU, false);
-    break;
-  }
+  Config::SetBaseOrCurrent(Config::GFX_EFB_SCALE, settings.efb_scale);
+  Config::SetBaseOrCurrent(Config::MAIN_CPU_THREAD, settings.cpu_thread);
+  Config::SetBaseOrCurrent(Config::GFX_VSYNC, settings.vsync);
+  Config::SetBaseOrCurrent(Config::MAIN_DSP_HLE, settings.dsp_hle);
+  Config::SetBaseOrCurrent(Config::GFX_SAFE_TEXTURE_CACHE_COLOR_SAMPLES, settings.texture_cache_samples);
+  Config::SetBaseOrCurrent(Config::MAIN_SYNC_GPU, settings.sync_gpu);
 
   if (!_jitAvailable) {
     // No JIT acquired - CachedInterpreter is the correct/only sane choice; the full JIT64/JITArm64
@@ -249,6 +245,23 @@ static NSDictionary<NSString*, NSString*>* DeviceIdentifierToChipName() {
   } else {
     Config::SetBaseOrCurrent(Config::MAIN_CPU_CORE, PowerPC::DefaultCPUCore());
   }
+}
+
+- (NSArray<NSString*>*)previewSettingsDescriptions {
+  const TierSettings settings = SettingsForTier(self.tier);
+
+  NSString* resolutionDescription =
+      settings.efb_scale == 0 ? @"Auto (display-matched)" : [NSString stringWithFormat:@"%dx", settings.efb_scale];
+
+  NSMutableArray<NSString*>* lines = [NSMutableArray array];
+  [lines addObject:[NSString stringWithFormat:@"Internal Resolution: %@", resolutionDescription]];
+  [lines addObject:[NSString stringWithFormat:@"Dual Core: %@", settings.cpu_thread ? @"On" : @"Off"]];
+  [lines addObject:[NSString stringWithFormat:@"V-Sync: %@", settings.vsync ? @"On" : @"Off"]];
+  [lines addObject:[NSString stringWithFormat:@"Audio: %@", settings.dsp_hle ? @"Fast (HLE)" : @"Accurate (LLE)"]];
+  [lines addObject:[NSString stringWithFormat:@"CPU Core: %@",
+                     _jitAvailable ? @"JIT" : @"Cached Interpreter (no JIT)"]];
+
+  return lines;
 }
 
 @end
