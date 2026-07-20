@@ -124,6 +124,45 @@
 
   self->_gameFiles = sorted;
   [self.collectionView reloadData];
+  [self updateEmptyState];
+}
+
+// Previously the collection view just went blank with zero explanation whenever _gameFiles was
+// empty - both on a genuinely fresh install (no games imported yet) and, confusingly, whenever
+// a search or the favorites-only filter simply had zero matches. Distinguishes between those two
+// cases so the message is actually accurate to what happened.
+- (void)updateEmptyState {
+  if (self->_gameFiles.count > 0) {
+    self.collectionView.backgroundView = nil;
+    return;
+  }
+
+  NSString* message;
+  if (self->_searchText.length > 0) {
+    message = [NSString stringWithFormat:DOLCoreLocalizedStringWithArgs(@"No games match “%1”.", @"@"), self->_searchText];
+  } else if ([GameLibraryPreferences shared].favoritesOnly) {
+    message = DOLCoreLocalizedString(@"No favorites yet. Long-press a game and choose Favorite to add one.");
+  } else if (self->_allGameFiles.count == 0) {
+    message = DOLCoreLocalizedString(@"No games yet. Import a game file to get started.");
+  } else {
+    // _allGameFiles is non-empty but _gameFiles ended up empty and neither search nor
+    // favorites-only is active - shouldn't currently be reachable, but fail into a generic
+    // message rather than silently showing nothing if a future filter mode changes that.
+    message = DOLCoreLocalizedString(@"No games to show.");
+  }
+
+  UILabel* label = [[UILabel alloc] initWithFrame:self.collectionView.bounds];
+  label.text = message;
+  label.textAlignment = NSTextAlignmentCenter;
+  label.textColor = [UIColor secondaryLabelColor];
+  label.font = [UIFont preferredFontForTextStyle:UIFontTextStyleBody];
+  label.numberOfLines = 0;
+  label.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+
+  UIEdgeInsets insets = UIEdgeInsetsMake(0, 32, 0, 32);
+  label.frame = UIEdgeInsetsInsetRect(label.frame, insets);
+
+  self.collectionView.backgroundView = label;
 }
 
 - (void)loadGameFile:(GameFilePtrWrapper*)gameFileWrapper {
