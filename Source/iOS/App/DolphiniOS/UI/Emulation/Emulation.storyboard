@@ -33,10 +33,10 @@
                                 <rect key="frame" x="0.0" y="150" width="414" height="678"/>
                             </view>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="agl-Jo-GPL">
-                                <rect key="frame" x="8" y="162" width="32" height="32"/>
+                                <rect key="frame" x="8" y="162" width="44" height="44"/>
                                 <constraints>
-                                    <constraint firstAttribute="width" constant="32" id="6Lq-kF-8lD"/>
-                                    <constraint firstAttribute="height" constant="32" id="xSW-kQ-TrR"/>
+                                    <constraint firstAttribute="width" constant="44" id="6Lq-kF-8lD"/>
+                                    <constraint firstAttribute="height" constant="44" id="xSW-kQ-TrR"/>
                                 </constraints>
                                 <color key="tintColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
@@ -101,7 +101,9 @@
                         </variation>
                     </view>
                     <navigationItem key="navigationItem" id="8R3-bp-VoF">
-                        <barButtonItem key="leftBarButtonItem" title="Item" image="gearshape" catalog="system" id="P9h-SU-AWn"/>
+                        <barButtonItem key="leftBarButtonItem" title="Menu" image="gearshape" catalog="system" id="P9h-SU-AWn">
+                            <accessibility key="accessibilityConfiguration" label="In-Game Menu" hint="Save states, controller settings, mute, fast forward, and other options."/>
+                        </barButtonItem>
                     </navigationItem>
                     <connections>
                         <outlet property="metalBottomConstraint" destination="TK6-ZL-CFi" id="X2K-tT-8F0"/>

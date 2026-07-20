@@ -29,7 +29,7 @@
         <scene sceneID="4qk-zX-puL">
             <objects>
                 <viewControllerPlaceholder storyboardName="SoftwareList" referencedIdentifier="softwareListRoot" id="thF-fB-DVb" sceneMemberID="viewController">
-                    <tabBarItem key="tabBarItem" title="Games" id="PF1-IQ-Jhc"/>
+                    <tabBarItem key="tabBarItem" title="Games" image="gamecontroller.fill" catalog="system" id="PF1-IQ-Jhc"/>
                 </viewControllerPlaceholder>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="OBI-2z-yFD" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
@@ -39,11 +39,15 @@
         <scene sceneID="ffR-zl-gPK">
             <objects>
                 <viewControllerPlaceholder storyboardName="SettingsRoot" id="Mnf-Cd-eQi" sceneMemberID="viewController">
-                    <tabBarItem key="tabBarItem" title="Item" id="Pc1-Cr-D3n"/>
+                    <tabBarItem key="tabBarItem" title="Settings" image="gear" catalog="system" id="Pc1-Cr-D3n"/>
                 </viewControllerPlaceholder>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="yhC-4k-CeX" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="50" y="-224"/>
         </scene>
     </scenes>
+    <resources>
+        <image name="gamecontroller.fill" catalog="system" width="128" height="105"/>
+        <image name="gear" catalog="system" width="128" height="119"/>
+    </resources>
 </document>
