@@ -16,6 +16,8 @@
 #import "BootNoticeManager.h"
 #import "UnofficialBuildNoticeViewController.h"
 
+#import "Swift.h"
+
 @implementation FirstRunInitializationService
 
 - (void)importDefaultProfileForInputConfig:(InputConfig*)config {
@@ -50,6 +52,7 @@
     Config::SetBase(Config::MAIN_GFX_BACKEND, "Metal");
     
     [[BootNoticeManager shared] enqueueViewController:[[UnofficialBuildNoticeViewController alloc] initWithNibName:@"UnofficialBuildNotice" bundle:nil]];
+    [[BootNoticeManager shared] enqueueViewController:[[WelcomeOnboardingViewController alloc] init]];
   }
   
   return true;
