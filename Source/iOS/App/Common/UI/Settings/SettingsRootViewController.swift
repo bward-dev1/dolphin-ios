@@ -15,16 +15,31 @@ class SettingsRootViewController : UITableViewController {
     coreVersionLabel.text = versionManager.coreVersion
   }
   
+  // Cells are looked up by tag (set in SettingsRoot.storyboard) rather than raw section/row
+  // indices, so reordering or regrouping rows in the storyboard can't silently point this at
+  // the wrong cell.
+  private enum RowTag: Int {
+    case help = 1
+    case coverArt = 2
+    case appIcon = 3
+    case optimizeSettings = 4
+  }
+
   override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
     tableView.deselectRow(at: indexPath, animated: true)
 
-    if (indexPath.section == 0 && indexPath.row == 3) {
+    guard let cell = tableView.cellForRow(at: indexPath), let tag = RowTag(rawValue: cell.tag) else {
+      return
+    }
+
+    switch tag {
+    case .help:
       UIApplication.shared.open(URL(string: "https://oatmealdome.me/dolphinios/")!)
-    } else if (indexPath.section == 1 && indexPath.row == 3) {
+    case .coverArt:
       navigationController?.pushViewController(CoverArtSettingsViewController(), animated: true)
-    } else if (indexPath.section == 1 && indexPath.row == 4) {
+    case .appIcon:
       navigationController?.pushViewController(AppIconSelectorViewController(), animated: true)
-    } else if (indexPath.section == 1 && indexPath.row == 5) {
+    case .optimizeSettings:
       navigationController?.pushViewController(OptimizeSettingsViewController(), animated: true)
     }
   }
