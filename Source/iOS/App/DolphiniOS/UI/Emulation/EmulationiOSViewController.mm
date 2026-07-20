@@ -218,7 +218,13 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
   NSMutableArray<UIMenuElement*>* stateSlotActions = [[NSMutableArray alloc] init];
 
   for (int i = 1; i <= State::NUM_STATES; i++) {
-    [stateSlotActions addObject:[UIAction actionWithTitle:[NSString stringWithFormat:@"Slot %d", i] image:nil identifier:nil handler:^(UIAction* action) {
+    // GetInfoStringOfSlot already returns "Empty" or a formatted save timestamp - previously
+    // unused by the iOS UI despite existing precisely for this, so every slot looked identical
+    // and a user had no way to tell which ones actually held a save without loading each blind.
+    NSString* slotInfo = [NSString stringWithUTF8String:State::GetInfoStringOfSlot(i).c_str()];
+    NSString* title = [NSString stringWithFormat:@"Slot %d — %@", i, slotInfo];
+
+    [stateSlotActions addObject:[UIAction actionWithTitle:title image:nil identifier:nil handler:^(UIAction* action) {
       self->_stateSlot = i;
       Config::SetBase(Config::MAIN_SELECTED_STATE_SLOT, i);
 
@@ -267,12 +273,28 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
   }];
   fpsAction.state = showingFps ? UIMenuElementStateOn : UIMenuElementStateOff;
 
+  // 0.0 is Dolphin's own "Unlimited" convention (see SpeedLimitViewController, row 0) - reused
+  // here rather than inventing a new speed value, so this stays consistent with whatever the
+  // Speed Limit setting itself already means. Restoring to 1.0 (100%) on toggle-off rather than
+  // whatever the user's base speed limit was set to is a deliberate simplification: this is a
+  // quick in-game toggle, not a replacement for the real per-user speed limit setting.
+  BOOL isFastForwarding = Config::Get(Config::MAIN_EMULATION_SPEED) == 0.0f;
+  UIAction* fastForwardAction = [UIAction actionWithTitle:DOLCoreLocalizedString(@"Fast Forward")
+                                                      image:[UIImage systemImageNamed:@"forward.fill"]
+                                                 identifier:nil
+                                                    handler:^(UIAction*) {
+    Config::SetBaseOrCurrent(Config::MAIN_EMULATION_SPEED, isFastForwarding ? 1.0f : 0.0f);
+    [self recreateMenu];
+  }];
+  fastForwardAction.state = isFastForwarding ? UIMenuElementStateOn : UIMenuElementStateOff;
+
   [menuItems addObject:[UIMenu menuWithTitle:@"" image:nil identifier:nil options:UIMenuOptionsDisplayInline children:@[
     [UIAction actionWithTitle:DOLCoreLocalizedString(@"Take Screenshot") image:[UIImage systemImageNamed:@"camera"] identifier:nil handler:^(UIAction*) {
       [self takeScreenshot];
     }],
     muteAction,
-    fpsAction
+    fpsAction,
+    fastForwardAction
   ]]];
 
   if ([self emulateSkylanderPortal] && Core::System::GetInstance().IsWii()) {
