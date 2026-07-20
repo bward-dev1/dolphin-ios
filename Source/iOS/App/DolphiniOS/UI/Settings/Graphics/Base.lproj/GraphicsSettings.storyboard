@@ -392,7 +392,7 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <sections>
-                            <tableViewSection id="4Jj-uW-ubH">
+                            <tableViewSection footerTitle="Sets how Dolphin's renderer crops and scales the emulated picture, independent of the Wii console's own output setting (Config &gt; Wii &gt; Aspect Ratio)." id="4Jj-uW-ubH">
                                 <cells>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" id="v5W-Xr-6La">
                                         <rect key="frame" x="16" y="18" width="343" height="43"/>
@@ -490,7 +490,7 @@
                             <outlet property="delegate" destination="EBq-rf-pTT" id="6pq-mk-ZsA"/>
                         </connections>
                     </tableView>
-                    <navigationItem key="navigationItem" title="Aspect Ratio" largeTitleDisplayMode="never" id="l4u-GK-Pma"/>
+                    <navigationItem key="navigationItem" title="Renderer Aspect Ratio" largeTitleDisplayMode="never" id="l4u-GK-Pma"/>
                     <simulatedNavigationBarMetrics key="simulatedTopBarMetrics" prompted="NO"/>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="N7U-v0-FrG" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>

@@ -1731,7 +1731,7 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <sections>
-                            <tableViewSection id="TnW-FO-4I8">
+                            <tableViewSection footerTitle="Sets the Wii console's own output aspect ratio, independent of Dolphin's renderer (Graphics &gt; Aspect Ratio)." id="TnW-FO-4I8">
                                 <cells>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" id="xza-12-cHl">
                                         <rect key="frame" x="16" y="18" width="343" height="51.5"/>
@@ -1785,7 +1785,7 @@
                             <outlet property="delegate" destination="U34-gf-gLU" id="dzX-mU-V52"/>
                         </connections>
                     </tableView>
-                    <navigationItem key="navigationItem" title="Aspect Ratio" largeTitleDisplayMode="never" id="3rl-o2-iN6"/>
+                    <navigationItem key="navigationItem" title="Wii Aspect Ratio" largeTitleDisplayMode="never" id="3rl-o2-iN6"/>
                     <simulatedNavigationBarMetrics key="simulatedTopBarMetrics" prompted="NO"/>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="72S-T9-xZk" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
