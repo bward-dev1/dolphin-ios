@@ -15,8 +15,8 @@
 // generations within the same "iPadN," family depending on the minor number (e.g. iPad13,4-7 is
 // M1 while iPad13,18-19 is A14) - Apple doesn't expose the chip directly, so this is the same
 // kind of identifier table every third-party "what chip is this" library maintains by hand.
-// Only used for DISPLAY and as a secondary/advisory tiering input; RAM + core count + JIT
-// availability (all queried directly, no guessing) drive the actual settings that get applied.
+// Display only - it does not feed into tier at all. RAM + core count + JIT availability (all
+// queried directly, no guessing) are the only inputs to the actual settings that get applied.
 static NSDictionary<NSString*, NSString*>* DeviceIdentifierToChipName() {
   static NSDictionary<NSString*, NSString*>* table = @{
     // iPhone
@@ -40,7 +40,9 @@ static NSDictionary<NSString*, NSString*>* DeviceIdentifierToChipName() {
     @"iPhone15,4" : @"Apple A16 Bionic", @"iPhone15,5" : @"Apple A16 Bionic",
     @"iPhone16,1" : @"Apple A17 Pro", @"iPhone16,2" : @"Apple A17 Pro",
     @"iPhone17,1" : @"Apple A18 Pro", @"iPhone17,2" : @"Apple A18 Pro",
-    @"iPhone17,3" : @"Apple A18", @"iPhone17,4" : @"Apple A18", @"iPhone17,5" : @"Apple A18 Pro",
+    @"iPhone17,3" : @"Apple A18", @"iPhone17,4" : @"Apple A18", @"iPhone17,5" : @"Apple A18",
+    @"iPhone18,1" : @"Apple A19 Pro", @"iPhone18,2" : @"Apple A19 Pro",
+    @"iPhone18,3" : @"Apple A19", @"iPhone18,4" : @"Apple A19 Pro", @"iPhone18,5" : @"Apple A19",
     // iPad
     @"iPad6,11" : @"Apple A9", @"iPad6,12" : @"Apple A9",
     @"iPad7,5" : @"Apple A9", @"iPad7,6" : @"Apple A9",
@@ -61,14 +63,20 @@ static NSDictionary<NSString*, NSString*>* DeviceIdentifierToChipName() {
     @"iPad13,18" : @"Apple A14 Bionic", @"iPad13,19" : @"Apple A14 Bionic",
     @"iPad13,4" : @"Apple M1", @"iPad13,5" : @"Apple M1",
     @"iPad13,6" : @"Apple M1", @"iPad13,7" : @"Apple M1",
+    @"iPad13,8" : @"Apple M1", @"iPad13,9" : @"Apple M1",
+    @"iPad13,10" : @"Apple M1", @"iPad13,11" : @"Apple M1",
     @"iPad13,16" : @"Apple M1", @"iPad13,17" : @"Apple M1",
     @"iPad14,3" : @"Apple M2", @"iPad14,4" : @"Apple M2",
     @"iPad14,5" : @"Apple M2", @"iPad14,6" : @"Apple M2",
     @"iPad14,8" : @"Apple M2", @"iPad14,9" : @"Apple M2",
     @"iPad14,10" : @"Apple M2", @"iPad14,11" : @"Apple M2",
+    @"iPad16,1" : @"Apple A17 Pro", @"iPad16,2" : @"Apple A17 Pro",
     @"iPad16,3" : @"Apple M4", @"iPad16,4" : @"Apple M4",
     @"iPad16,5" : @"Apple M4", @"iPad16,6" : @"Apple M4",
-    @"iPad15,3" : @"Apple A16 Bionic", @"iPad15,4" : @"Apple A16 Bionic",
+    // iPad Air 11"/13" (M3, Mar 2025) - not to be confused with iPad15,7/8 below (the
+    // plain "iPad (A16)"), same iPad15 family but a different model entirely.
+    @"iPad15,3" : @"Apple M3", @"iPad15,4" : @"Apple M3",
+    @"iPad15,5" : @"Apple M3", @"iPad15,6" : @"Apple M3",
     @"iPad15,7" : @"Apple A16 Bionic", @"iPad15,8" : @"Apple A16 Bionic",
   };
   return table;
@@ -173,7 +181,7 @@ static NSDictionary<NSString*, NSString*>* DeviceIdentifierToChipName() {
 - (NSString*)tierSummary {
   switch (self.tier) {
   case DevicePerformanceTierUltra:
-    return @"Native resolution scaling, dual-core enabled, accurate audio and MMU emulation.";
+    return @"Auto (display-matched) resolution scaling, dual-core enabled, accurate audio.";
   case DevicePerformanceTierHigh:
     return @"2x internal resolution, dual-core enabled, accurate audio.";
   case DevicePerformanceTierMedium:
@@ -189,13 +197,21 @@ static NSDictionary<NSString*, NSString*>* DeviceIdentifierToChipName() {
 
   DevicePerformanceTier tier = self.tier;
 
+  // MMU emulation is deliberately never touched here. Whether a title needs it is a per-game
+  // compatibility requirement handled by Dolphin's own per-game .ini overrides (see
+  // GameConfigLoader), not a device-performance dial - forcing it on for every Ultra-tier game
+  // would cost real overhead on titles that don't need it, and forcing it off for every
+  // lower-tier game could break the rare title that does and doesn't have a curated override
+  // yet. Leave whatever value the user or the per-game layer already has.
   switch (tier) {
   case DevicePerformanceTierUltra:
-    Config::SetBaseOrCurrent(Config::GFX_EFB_SCALE, 0);  // 0 = native/auto (highest)
+    // 0 = EFB_SCALE_AUTO_INTEGRAL: scales to match the actual render surface, not a fixed
+    // numeric multiplier - usually the sharpest option on a full-screen device, but not a
+    // guaranteed max (e.g. a smaller Split View pane would auto-scale lower too).
+    Config::SetBaseOrCurrent(Config::GFX_EFB_SCALE, 0);
     Config::SetBaseOrCurrent(Config::MAIN_CPU_THREAD, true);
     Config::SetBaseOrCurrent(Config::GFX_VSYNC, true);
     Config::SetBaseOrCurrent(Config::MAIN_DSP_HLE, false);
-    Config::SetBaseOrCurrent(Config::MAIN_MMU, true);
     Config::SetBaseOrCurrent(Config::GFX_SAFE_TEXTURE_CACHE_COLOR_SAMPLES, 0);
     Config::SetBaseOrCurrent(Config::MAIN_SYNC_GPU, true);
     break;
@@ -204,7 +220,6 @@ static NSDictionary<NSString*, NSString*>* DeviceIdentifierToChipName() {
     Config::SetBaseOrCurrent(Config::MAIN_CPU_THREAD, true);
     Config::SetBaseOrCurrent(Config::GFX_VSYNC, true);
     Config::SetBaseOrCurrent(Config::MAIN_DSP_HLE, false);
-    Config::SetBaseOrCurrent(Config::MAIN_MMU, false);
     Config::SetBaseOrCurrent(Config::GFX_SAFE_TEXTURE_CACHE_COLOR_SAMPLES, 512);
     Config::SetBaseOrCurrent(Config::MAIN_SYNC_GPU, false);
     break;
@@ -213,7 +228,6 @@ static NSDictionary<NSString*, NSString*>* DeviceIdentifierToChipName() {
     Config::SetBaseOrCurrent(Config::MAIN_CPU_THREAD, false);
     Config::SetBaseOrCurrent(Config::GFX_VSYNC, true);
     Config::SetBaseOrCurrent(Config::MAIN_DSP_HLE, true);
-    Config::SetBaseOrCurrent(Config::MAIN_MMU, false);
     Config::SetBaseOrCurrent(Config::GFX_SAFE_TEXTURE_CACHE_COLOR_SAMPLES, 128);
     Config::SetBaseOrCurrent(Config::MAIN_SYNC_GPU, false);
     break;
@@ -223,7 +237,6 @@ static NSDictionary<NSString*, NSString*>* DeviceIdentifierToChipName() {
     Config::SetBaseOrCurrent(Config::MAIN_CPU_THREAD, false);
     Config::SetBaseOrCurrent(Config::GFX_VSYNC, false);
     Config::SetBaseOrCurrent(Config::MAIN_DSP_HLE, true);
-    Config::SetBaseOrCurrent(Config::MAIN_MMU, false);
     Config::SetBaseOrCurrent(Config::GFX_SAFE_TEXTURE_CACHE_COLOR_SAMPLES, 128);
     Config::SetBaseOrCurrent(Config::MAIN_SYNC_GPU, false);
     break;

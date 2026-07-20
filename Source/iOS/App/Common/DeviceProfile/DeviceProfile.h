@@ -45,7 +45,8 @@ typedef NS_ENUM(NSInteger, DevicePerformanceTier) {
 
 // Applies the Dolphin Config:: settings this device's tier implies. Real, current settings keys
 // (GFX_EFB_SCALE, MAIN_CPU_THREAD, GFX_VSYNC, MAIN_DSP_HLE, GFX_SAFE_TEXTURE_CACHE_COLOR_SAMPLES,
-// MAIN_MMU, GFX_MSAA, MAIN_SYNC_GPU) - not placeholders.
+// MAIN_SYNC_GPU) - not placeholders. Deliberately never touches MAIN_MMU: that's a per-game
+// compatibility need, not a device-performance dial - see the comment in applyOptimizedSettings.
 - (void)applyOptimizedSettings;
 
 @end
