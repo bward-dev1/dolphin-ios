@@ -427,12 +427,17 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
       return;
     }
 
-    UIImageWriteToSavedPhotosAlbum(image, self, @selector(screenshot:didFinishSavingWithError:contextInfo:), (__bridge void*)feedback);
+    // __bridge_retained: feedback is a local with nothing else holding it past this block's
+    // scope. A plain __bridge here would let ARC deallocate it before the async save actually
+    // completes, leaving screenshot:didFinishSavingWithError:contextInfo: reading a dangling
+    // pointer out of contextInfo (real use-after-free, not theoretical -- this fires on every
+    // screenshot). __bridge_transfer below hands ownership back and releases it.
+    UIImageWriteToSavedPhotosAlbum(image, self, @selector(screenshot:didFinishSavingWithError:contextInfo:), (__bridge_retained void*)feedback);
   }];
 }
 
 - (void)screenshot:(UIImage*)image didFinishSavingWithError:(NSError* _Nullable)error contextInfo:(void*)contextInfo {
-  UINotificationFeedbackGenerator* feedback = (__bridge UINotificationFeedbackGenerator*)contextInfo;
+  UINotificationFeedbackGenerator* feedback = (__bridge_transfer UINotificationFeedbackGenerator*)contextInfo;
 
   [feedback notificationOccurred:error == nil ? UINotificationFeedbackTypeSuccess : UINotificationFeedbackTypeError];
 }
