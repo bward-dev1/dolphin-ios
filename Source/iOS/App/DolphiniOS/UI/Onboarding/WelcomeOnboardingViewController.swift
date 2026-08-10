@@ -4,38 +4,52 @@
 import Foundation
 import UIKit
 
-// First-launch-only welcome screen, pushed onto BootNoticeManager's queue right after the
-// existing unofficial-build notice. Previously a brand-new user landed straight on an empty
-// game library with zero explanation of how to import a game, where Settings live, or how the
-// touch controls work - this is the first thing that ever explains any of that.
+// Set on first launch by FirstRunInitializationService, cleared once the user actually finishes
+// the screen. Deliberately not keyed off "launch_times == 0": that counter is bumped before this
+// screen is ever shown, so a crash or force quit mid-flow used to eat the app's only onboarding
+// forever. Keep in sync with FirstRunInitializationService.mm.
+private let kWelcomeOnboardingPendingKey = "welcome_onboarding_pending"
+
+private enum Metrics {
+  static let horizontalInset: CGFloat = 24
+  static let iconBaseWidth: CGFloat = 32
+  static let iconTextStyle: UIFont.TextStyle = .title2
+}
+
+// The one and only screen a brand-new user has to get through before the game library.
+//
+// It used to be two: this welcome screen *and* the separate unofficial-build notice, both pushed
+// onto BootNoticeManager's queue on first launch. Worse, they appeared in the wrong order (a
+// UINavigationController shows the last controller pushed), so "Get Started" took you to a legal
+// disclaimer instead of the app. The notice is now a footnote at the bottom of this screen, so
+// first launch costs one screen and one tap.
+//
+// BootNoticeManager presents this in a form sheet with modalInPresentation = true, so the button
+// is the only way out. That is why everything scrolls and the button is pinned *outside* the
+// scroll view: on a small phone in landscape, or at an accessibility text size, a centred
+// non-scrolling layout pushes the only exit off-screen and soft-locks the app.
 @objc class WelcomeOnboardingViewController: UIViewController {
-  private struct Point {
+  private struct Tip {
     let symbolName: String
     let title: String
     let body: String
   }
 
-  private let points: [Point] = [
-    Point(symbolName: "square.and.arrow.down.on.square",
-          title: "Import a Game",
-          body: "Tap the + button in your game library and choose a game file to add it."),
-    Point(symbolName: "gamecontroller",
-          title: "Touch Controls",
-          body: "On-screen buttons appear automatically during play. You can also pair a "
-              + "Bluetooth controller, or use a Wii Remote-style motion pointer for Wii games."),
-    Point(symbolName: "gearshape",
-          title: "Settings",
-          body: "The Settings tab covers graphics, controllers, and an Optimize My Settings "
-              + "tool that picks good defaults for this specific device."),
+  private let tips: [Tip] = [
+    Tip(symbolName: "plus.circle",
+        title: "Add Your Games",
+        body: "Tap + in the Games tab to import game files from Files or iCloud Drive."),
+    Tip(symbolName: "gamecontroller",
+        title: "Play",
+        body: "On-screen controls appear automatically. Bluetooth controllers work too."),
+    Tip(symbolName: "gearshape",
+        title: "Settings",
+        body: "Graphics, controllers, Help, and Optimize My Settings, which picks good defaults "
+            + "for this device."),
   ]
 
-  init() {
-    super.init(nibName: nil, bundle: nil)
-  }
-
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
+  private var tipRows: [UIStackView] = []
+  private var iconWidthConstraints: [NSLayoutConstraint] = []
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -43,13 +57,19 @@ import UIKit
     view.backgroundColor = .systemBackground
 
     let titleLabel = UILabel()
-    titleLabel.text = "Welcome"
-    titleLabel.font = .preferredFont(forTextStyle: .largeTitle).withTraits(.traitBold)
+    titleLabel.text = "Welcome to DolphiniOS"
+    // Bold largeTitle that still tracks Dynamic Type. Building the font from a descriptor alone
+    // would freeze it at the size in effect when the view loaded.
+    titleLabel.font = UIFontMetrics(forTextStyle: .largeTitle)
+        .scaledFont(for: .systemFont(ofSize: 34, weight: .bold))
+    titleLabel.adjustsFontForContentSizeCategory = true
     titleLabel.numberOfLines = 0
+    titleLabel.accessibilityTraits = .header
 
     let subtitleLabel = UILabel()
-    subtitleLabel.text = "A few things to know before you dive in."
+    subtitleLabel.text = "Three things, then you're in."
     subtitleLabel.font = .preferredFont(forTextStyle: .body)
+    subtitleLabel.adjustsFontForContentSizeCategory = true
     subtitleLabel.textColor = .secondaryLabel
     subtitleLabel.numberOfLines = 0
 
@@ -57,49 +77,84 @@ import UIKit
     headerStack.axis = .vertical
     headerStack.spacing = 4
 
-    let pointsStack = UIStackView(arrangedSubviews: points.map { makeRow(for: $0) })
-    pointsStack.axis = .vertical
-    pointsStack.spacing = 24
+    tipRows = tips.map { makeRow(for: $0) }
 
-    let getStartedButton = UIButton(type: .system)
-    getStartedButton.setTitle("Get Started", for: .normal)
-    getStartedButton.titleLabel?.font = .preferredFont(forTextStyle: .headline)
-    getStartedButton.backgroundColor = .systemBlue
-    getStartedButton.setTitleColor(.white, for: .normal)
-    getStartedButton.layer.cornerRadius = 14
-    getStartedButton.heightAnchor.constraint(equalToConstant: 50).isActive = true
-    getStartedButton.addTarget(self, action: #selector(getStartedTapped), for: .touchUpInside)
+    let tipsStack = UIStackView(arrangedSubviews: tipRows)
+    tipsStack.axis = .vertical
+    tipsStack.spacing = 20
 
-    let contentStack = UIStackView(arrangedSubviews: [headerStack, pointsStack, getStartedButton])
+    let contentStack = UIStackView(arrangedSubviews: [headerStack, tipsStack, makeUnofficialBuildNotice()])
     contentStack.axis = .vertical
-    contentStack.spacing = 32
+    contentStack.spacing = 28
+    contentStack.setCustomSpacing(32, after: headerStack)
     contentStack.translatesAutoresizingMaskIntoConstraints = false
-    contentStack.setCustomSpacing(40, after: headerStack)
 
-    view.addSubview(contentStack)
+    let scrollView = UIScrollView()
+    scrollView.translatesAutoresizingMaskIntoConstraints = false
+    scrollView.alwaysBounceVertical = false
+    // The scroll view is already pinned to the safe area; letting UIKit add its own adjustment on
+    // top of that would double-inset the content.
+    scrollView.contentInsetAdjustmentBehavior = .never
+    scrollView.addSubview(contentStack)
+    view.addSubview(scrollView)
+
+    let getStartedButton = makeGetStartedButton()
+    view.addSubview(getStartedButton)
+
+    let safeArea = view.safeAreaLayoutGuide
+    let frameGuide = scrollView.frameLayoutGuide
+    let contentGuide = scrollView.contentLayoutGuide
 
     NSLayoutConstraint.activate([
-      contentStack.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 24),
-      contentStack.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -24),
-      contentStack.centerYAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerYAnchor),
+      scrollView.topAnchor.constraint(equalTo: safeArea.topAnchor),
+      scrollView.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor),
+      scrollView.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor),
+      scrollView.bottomAnchor.constraint(equalTo: getStartedButton.topAnchor, constant: -16),
+
+      contentStack.topAnchor.constraint(equalTo: contentGuide.topAnchor, constant: 32),
+      contentStack.bottomAnchor.constraint(equalTo: contentGuide.bottomAnchor, constant: -24),
+      contentStack.leadingAnchor.constraint(equalTo: contentGuide.leadingAnchor,
+                                            constant: Metrics.horizontalInset),
+      contentStack.trailingAnchor.constraint(equalTo: contentGuide.trailingAnchor,
+                                             constant: -Metrics.horizontalInset),
+      // Pins the scrollable width so the labels wrap instead of scrolling sideways.
+      contentStack.widthAnchor.constraint(equalTo: frameGuide.widthAnchor,
+                                          constant: -Metrics.horizontalInset * 2),
+
+      getStartedButton.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor,
+                                                constant: Metrics.horizontalInset),
+      getStartedButton.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor,
+                                                 constant: -Metrics.horizontalInset),
+      getStartedButton.bottomAnchor.constraint(equalTo: safeArea.bottomAnchor, constant: -16),
     ])
+
+    applyContentSizeCategory()
   }
 
-  private func makeRow(for point: Point) -> UIView {
-    let iconView = UIImageView(image: UIImage(systemName: point.symbolName))
+  private func makeRow(for tip: Tip) -> UIStackView {
+    let iconView = UIImageView(
+        image: UIImage(systemName: tip.symbolName,
+                       withConfiguration: UIImage.SymbolConfiguration(textStyle: Metrics.iconTextStyle)))
     iconView.contentMode = .scaleAspectFit
     iconView.tintColor = .systemBlue
+    iconView.adjustsImageSizeForAccessibilityContentSizeCategory = true
     iconView.setContentHuggingPriority(.required, for: .horizontal)
-    iconView.widthAnchor.constraint(equalToConstant: 32).isActive = true
+    iconView.setContentCompressionResistancePriority(.required, for: .horizontal)
+
+    let iconWidth = iconView.widthAnchor.constraint(equalToConstant: Metrics.iconBaseWidth)
+    iconWidth.isActive = true
+    iconWidthConstraints.append(iconWidth)
 
     let titleLabel = UILabel()
-    titleLabel.text = point.title
+    titleLabel.text = tip.title
     titleLabel.font = .preferredFont(forTextStyle: .headline)
+    titleLabel.adjustsFontForContentSizeCategory = true
     titleLabel.numberOfLines = 0
 
     let bodyLabel = UILabel()
-    bodyLabel.text = point.body
+    bodyLabel.text = tip.body
     bodyLabel.font = .preferredFont(forTextStyle: .subheadline)
+    bodyLabel.adjustsFontForContentSizeCategory = true
     bodyLabel.textColor = .secondaryLabel
     bodyLabel.numberOfLines = 0
 
@@ -112,23 +167,103 @@ import UIKit
     row.spacing = 16
     row.alignment = .top
 
-    let accessibilityLabel = "\(point.title). \(point.body)"
+    // One VoiceOver stop per tip rather than three (icon, title, body).
     row.isAccessibilityElement = true
-    row.accessibilityLabel = accessibilityLabel
+    row.accessibilityLabel = "\(tip.title). \(tip.body)"
 
     return row
   }
 
-  @objc private func getStartedTapped() {
-    navigationController?.popViewController(animated: true)
-  }
-}
+  // Folded in from the old standalone UnofficialBuildNotice screen. Same three points (not
+  // official Dolphin, don't file bugs upstream, help lives in Settings), one paragraph, no extra
+  // tap.
+  private func makeUnofficialBuildNotice() -> UIView {
+    let label = UILabel()
+    label.text = "DolphiniOS is not an official version of Dolphin. It is a separate app built "
+        + "on Dolphin's code, so please don't report bugs or ask for help on the official Dolphin "
+        + "forums or bug tracker. Use Help in the Settings tab instead."
+    label.font = .preferredFont(forTextStyle: .footnote)
+    label.adjustsFontForContentSizeCategory = true
+    label.textColor = .secondaryLabel
+    label.numberOfLines = 0
+    label.translatesAutoresizingMaskIntoConstraints = false
 
-private extension UIFont {
-  func withTraits(_ traits: UIFontDescriptor.SymbolicTraits) -> UIFont {
-    guard let descriptor = fontDescriptor.withSymbolicTraits(traits) else {
-      return self
+    let container = UIView()
+    container.backgroundColor = .secondarySystemBackground
+    container.layer.cornerRadius = 12
+    container.layer.cornerCurve = .continuous
+    container.addSubview(label)
+
+    NSLayoutConstraint.activate([
+      label.topAnchor.constraint(equalTo: container.topAnchor, constant: 12),
+      label.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -12),
+      label.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 14),
+      label.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -14),
+    ])
+
+    return container
+  }
+
+  private func makeGetStartedButton() -> UIButton {
+    let button = UIButton(type: .system)
+    button.setTitle("Get Started", for: .normal)
+    button.titleLabel?.font = .preferredFont(forTextStyle: .headline)
+    button.titleLabel?.adjustsFontForContentSizeCategory = true
+    button.titleLabel?.numberOfLines = 0
+    button.titleLabel?.textAlignment = .center
+    button.backgroundColor = .systemBlue
+    button.setTitleColor(.white, for: .normal)
+    button.layer.cornerRadius = 14
+    button.layer.cornerCurve = .continuous
+    button.contentEdgeInsets = UIEdgeInsets(top: 14, left: 20, bottom: 14, right: 20)
+    button.isPointerInteractionEnabled = true
+    button.translatesAutoresizingMaskIntoConstraints = false
+    // Minimum, not a fixed height, so the label can grow with Dynamic Type instead of clipping.
+    button.heightAnchor.constraint(greaterThanOrEqualToConstant: 50).isActive = true
+    button.addTarget(self, action: #selector(getStartedTapped), for: .touchUpInside)
+
+    return button
+  }
+
+  override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+    super.traitCollectionDidChange(previousTraitCollection)
+
+    guard traitCollection.preferredContentSizeCategory
+        != previousTraitCollection?.preferredContentSizeCategory else {
+      return
     }
-    return UIFont(descriptor: descriptor, size: pointSize)
+
+    applyContentSizeCategory()
+  }
+
+  private func applyContentSizeCategory() {
+    let scaledIconWidth = UIFontMetrics(forTextStyle: Metrics.iconTextStyle)
+        .scaledValue(for: Metrics.iconBaseWidth, compatibleWith: traitCollection)
+
+    for constraint in iconWidthConstraints {
+      constraint.constant = scaledIconWidth
+    }
+
+    // At accessibility text sizes a 32pt-plus icon beside wrapped text leaves the body a sliver
+    // wide, so stack the icon above its text instead. Standard HIG large-content-size behaviour.
+    let stacked = traitCollection.preferredContentSizeCategory.isAccessibilityCategory
+
+    for row in tipRows {
+      row.axis = stacked ? .vertical : .horizontal
+      row.alignment = stacked ? .leading : .top
+      row.spacing = stacked ? 8 : 16
+    }
+  }
+
+  @objc private func getStartedTapped() {
+    // Cleared only once the user has actually been through the screen.
+    UserDefaults.standard.set(false, forKey: kWelcomeOnboardingPendingKey)
+
+    if let navigationController = navigationController {
+      // BootNoticeNavigationViewController dismisses itself when the last notice pops.
+      navigationController.popViewController(animated: true)
+    } else {
+      dismiss(animated: true)
+    }
   }
 }
