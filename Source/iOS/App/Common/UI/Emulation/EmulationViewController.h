@@ -23,6 +23,15 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)updateNavigationBar:(bool)hidden;
 
+// Presents the pointer-setup screen on demand, from the in-game menu, instead of as a gate in
+// front of the boot. Finishing it does not (re)start emulation.
+- (void)presentPointerSetupForRecalibration;
+
+// Called once an on-demand recalibration finishes and its screen has been dismissed. No-op in
+// this base class; EmulationiOSViewController overrides it to push the newly chosen mode onto the
+// live Wii Remote pointer, since by then the pointer already exists and won't be re-initialised.
+- (void)applyRecalibratedPointerMode;
+
 @end
 
 NS_ASSUME_NONNULL_END
