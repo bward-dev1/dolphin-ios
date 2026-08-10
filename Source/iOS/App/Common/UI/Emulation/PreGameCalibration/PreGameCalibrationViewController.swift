@@ -114,7 +114,9 @@ class PreGameCalibrationViewController: UIViewController {
     titleLabel.numberOfLines = 0
 
     let subtitleLabel = UILabel()
-    subtitleLabel.text = DOLCoreLocalizedString("A few quick questions so the Wii Remote pointer aims correctly from the start. This appears before every game -- it only takes a few seconds.")
+    // "every Wii game", not "every game": EmulationViewController now skips this gate entirely
+    // for GameCube titles, which have no Wii Remote for any of these answers to affect.
+    subtitleLabel.text = DOLCoreLocalizedString("A few quick questions so the Wii Remote pointer aims correctly from the start. This appears before every Wii game -- it only takes a few seconds.")
     subtitleLabel.font = .preferredFont(forTextStyle: .subheadline)
     subtitleLabel.textColor = .secondaryLabel
     subtitleLabel.numberOfLines = 0
@@ -238,7 +240,10 @@ class PreGameCalibrationViewController: UIViewController {
 
     prefs.holdOrientation = DeviceHoldOrientation(rawValue: self.holdOrientationControl.selectedSegmentIndex) ?? .upright
     prefs.flatFacing = DeviceFlatFacing(rawValue: self.flatFacingControl.selectedSegmentIndex) ?? .screenUp
-    prefs.calibrationMode = PointerCalibrationMode(rawValue: self.calibrationModeControl.selectedSegmentIndex) ?? .pointAtTV
+    // Falls back to .pointAtDevice rather than .pointAtTV: selectedSegmentIndex is -1 when no
+    // segment is selected, and .pointAtTV is the one answer that switches Touch IR Pointer off,
+    // so an out-of-range read must not be able to land on it.
+    prefs.calibrationMode = PointerCalibrationMode(rawValue: self.calibrationModeControl.selectedSegmentIndex) ?? .pointAtDevice
     prefs.isPlayingOnTV = self.playingOnTVSwitch.isOn
     prefs.tvScreenSize = TVScreenSize(rawValue: self.tvSizeControl.selectedSegmentIndex) ?? .widescreen
     prefs.tvScreenType = TVScreenType(rawValue: self.tvTypeControl.selectedSegmentIndex) ?? .lcdOrLed

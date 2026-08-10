@@ -21,13 +21,17 @@ import Foundation
   private var gyroBiasY: Double = 0.0
   private var gyroBiasZ: Double = 0.0
 
-  // Flat-calibration sampling state.
+  // Flat-calibration sampling state. Written from the CoreMotion delivery queue and read/reset
+  // from the main thread (start + watchdog), so all of it lives behind calibrationLock.
+  private let calibrationLock = NSLock()
   private var isCalibrating = false
   private var calibrationSamples = 0
   private var calibrationSumX = 0.0
   private var calibrationSumY = 0.0
   private var calibrationSumZ = 0.0
   private static let kCalibrationSampleTarget = 120  // ~0.6s at 200Hz
+  // ~0.6s of samples should take ~0.6s; anything past this means samples aren't arriving.
+  private static let kCalibrationTimeout: TimeInterval = 3.0
   private var calibrationCompletion: (() -> Void)?
 
   override required init() {
@@ -104,27 +108,25 @@ import Foundation
 
       // While calibrating, accumulate raw samples to estimate the resting bias, and
       // suppress output so the pointer doesn't twitch during the "hold still" moment.
+      self.calibrationLock.lock()
+
       if (self.isCalibrating) {
         self.calibrationSumX += rotation_rate.x
         self.calibrationSumY += rotation_rate.y
         self.calibrationSumZ += rotation_rate.z
         self.calibrationSamples += 1
 
-        if (self.calibrationSamples >= TCDeviceMotion.kCalibrationSampleTarget) {
-          let n = Double(self.calibrationSamples)
-          self.gyroBiasX = self.calibrationSumX / n
-          self.gyroBiasY = self.calibrationSumY / n
-          self.gyroBiasZ = self.calibrationSumZ / n
-          self.isCalibrating = false
+        let done = self.calibrationSamples >= TCDeviceMotion.kCalibrationSampleTarget
+        self.calibrationLock.unlock()
 
-          let completion = self.calibrationCompletion
-          self.calibrationCompletion = nil
-          if let completion = completion {
-            DispatchQueue.main.async { completion() }
-          }
+        if done {
+          self.finishCalibration()
         }
+
         return
       }
+
+      self.calibrationLock.unlock()
 
       // Subtract the calibrated resting bias so a still device reports ~zero rotation.
       let raw_x = rotation_rate.x - self.gyroBiasX
@@ -196,12 +198,65 @@ import Foundation
       self.setMotionEnabled(true)
     }
 
+    // `completion` is otherwise only ever fired from inside the gyro handler, so a device that
+    // never delivers a gyro sample -- no usable gyro, motion access denied, CoreMotion erroring
+    // out -- leaves the caller waiting forever. PreGameCalibrationViewController gates the
+    // entire game boot on this completion behind a non-cancellable full-screen modal, so
+    // "waiting forever" there means the game simply never starts and there is no way back.
+    guard self.motionManager.isGyroAvailable else {
+      NSLog("TCDeviceMotion: no gyroscope available, skipping flat calibration")
+      DispatchQueue.main.async { completion?() }
+      return
+    }
+
+    self.calibrationLock.lock()
     self.calibrationSamples = 0
     self.calibrationSumX = 0.0
     self.calibrationSumY = 0.0
     self.calibrationSumZ = 0.0
     self.calibrationCompletion = completion
     self.isCalibrating = true
+    self.calibrationLock.unlock()
+
+    // Backstop for the same failure modes that isGyroAvailable doesn't cover (permission
+    // revoked mid-flight, the handler only ever receiving errors): finish with whatever was
+    // collected -- or with no bias change at all -- rather than stranding the caller.
+    DispatchQueue.main.asyncAfter(deadline: .now() + TCDeviceMotion.kCalibrationTimeout) { [weak self] in
+      self?.finishCalibration()
+    }
+  }
+
+  // Idempotent: whichever of the sample target and the watchdog gets here first wins, the other
+  // becomes a no-op. Safe to call from any thread.
+  private func finishCalibration() {
+    self.calibrationLock.lock()
+
+    guard self.isCalibrating else {
+      self.calibrationLock.unlock()
+      return
+    }
+
+    self.isCalibrating = false
+
+    // Averaging zero samples would produce NaN biases and poison every subsequent gyro
+    // reading, so leave the existing bias alone if nothing arrived.
+    if self.calibrationSamples > 0 {
+      let n = Double(self.calibrationSamples)
+      self.gyroBiasX = self.calibrationSumX / n
+      self.gyroBiasY = self.calibrationSumY / n
+      self.gyroBiasZ = self.calibrationSumZ / n
+    } else {
+      NSLog("TCDeviceMotion: flat calibration timed out with no gyro samples, bias unchanged")
+    }
+
+    let completion = self.calibrationCompletion
+    self.calibrationCompletion = nil
+
+    self.calibrationLock.unlock()
+
+    if let completion = completion {
+      DispatchQueue.main.async { completion() }
+    }
   }
 
   // "Calibrate gyroscope for TV": hold the device pointed straight at your TV, then call

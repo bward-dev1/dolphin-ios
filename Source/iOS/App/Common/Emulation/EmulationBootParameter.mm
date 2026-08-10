@@ -10,6 +10,30 @@
 
 @implementation EmulationBootParameter
 
+- (instancetype)init {
+  self = [super init];
+
+  if (self != nil) {
+    _isWiiTitle = true;
+  }
+
+  return self;
+}
+
+- (BOOL)targetsWii {
+  // The Wii System Menu and the GameCube IPL/BIOS answer this by definition; only a file boot
+  // has to be told what it is.
+  if (self.bootType == EmulationBootTypeSystemMenu) {
+    return YES;
+  }
+
+  if (self.bootType == EmulationBootTypeGCIPL) {
+    return NO;
+  }
+
+  return self.isWiiTitle;
+}
+
 - (std::unique_ptr<BootParameters>) generateDolphinBootParameter {
   std::unique_ptr<BootParameters> boot;
   

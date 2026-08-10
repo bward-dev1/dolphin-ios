@@ -197,6 +197,13 @@
   _bootParameter.secondPath = second_game != nullptr ? CppToFoundationString(second_game->GetFilePath()) : nil;
   _bootParameter.isNKit = gameFileWrapper.gameFile->IsNKit();
 
+  // Lets pre-boot UI that only makes sense for an emulated Wii Remote (the pointer calibration
+  // screen) stay out of the way of GameCube titles. ELFOrDOL is ambiguous - homebrew can be
+  // either - so it falls on the "treat as Wii" side to match the property's default.
+  const DiscIO::Platform platform = game->GetPlatform();
+  _bootParameter.isWiiTitle = platform != DiscIO::Platform::GameCubeDisc &&
+                              platform != DiscIO::Platform::Triforce;
+
   [[GameLibraryPreferences shared] recordPlayedGameID:CppToFoundationString(game->GetGameID())];
 
   [self performSegueWithIdentifier:@"emulation" sender:nil];

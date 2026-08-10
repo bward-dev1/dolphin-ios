@@ -136,10 +136,22 @@
   }];
 }
 
-// Shown unconditionally right before every boot, regardless of which path got here (JIT
-// acquired, JIT not required, or an accepted NKit warning) -- this is the single funnel point
-// so the calibration screen can never be skipped.
+// Shown right before every Wii boot, regardless of which path got here (JIT acquired, JIT not
+// required, or an accepted NKit warning) -- this is the single funnel point so the calibration
+// screen can never be skipped.
+//
+// GameCube titles are excluded. Every question on that screen is about the emulated Wii
+// Remote's pointer, there is no Wii Remote in a GameCube boot for any of it to affect, and the
+// screen's own subtitle already tells the player "This appears before every Wii game." It is
+// non-cancellable and full-screen, so leaving it in front of GameCube boots is pure friction
+// between the player and the game with nothing configured in exchange.
 - (void)showPreGameCalibration {
+  if (![self.bootParameter targetsWii]) {
+    [self startEmulation];
+
+    return;
+  }
+
   PreGameCalibrationViewController* calibrationController = [[PreGameCalibrationViewController alloc] init];
   calibrationController.delegate = self;
   calibrationController.modalPresentationStyle = UIModalPresentationFullScreen;
