@@ -40,6 +40,10 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
 
 @interface EmulationiOSViewController ()
 
+// Declared here because they're first messaged from earlier in this file than they're defined.
+- (void)repairForcedMotionPointingOnce;
+- (void)switchToMotionPointingIfNeededPersisting:(BOOL)persist;
+
 @end
 
 @implementation EmulationiOSViewController {
@@ -50,6 +54,10 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
 
 - (void)viewDidLoad {
   [super viewDidLoad];
+
+  // Must run before the first updatePointerValuesOnWiiTouchPads (driven from
+  // viewDidLayoutSubviews, i.e. after this) so the repaired value is what gets applied.
+  [self repairForcedMotionPointingOnce];
 
   for (int i = 0; i < [self.touchPads count]; i++) {
     TCView* padView = self.touchPads[i];
@@ -367,11 +375,51 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
 // switch modes for them here rather than leaving them to discover a separate, non-obviously
 // related menu item first (this exact gap is why gyro aiming looked completely dead: it was
 // silently ignored while the default touch mode, Drag, was still active).
-- (void)switchToMotionPointingIfNeeded {
-  if ((TCWiiTouchIRMode)Config::Get(Config::MAIN_TOUCH_PAD_IR_MODE) != TCWiiTouchIRModeNone) {
+//
+// `persist` distinguishes the two kinds of caller. The Motion menu's Calibrate/Recenter actions
+// are an explicit user request and say so in their own alert text, so those persist. The
+// automatic pre-game "Point at TV" path is not a request to permanently change an unrelated
+// saved setting - it must only hold for this run, or one accidental boot silently rewrites
+// TouchPadIRMode in Dolphin.ini forever and the on-screen pointer never comes back.
+- (void)switchToMotionPointingIfNeededPersisting:(BOOL)persist {
+  if ((TCWiiTouchIRMode)Config::Get(Config::MAIN_TOUCH_PAD_IR_MODE) == TCWiiTouchIRModeNone) {
+    return;
+  }
+
+  if (persist) {
     Config::SetBaseOrCurrent(Config::MAIN_TOUCH_PAD_IR_MODE, TCWiiTouchIRModeNone);
-    [self updatePointerValuesOnWiiTouchPads];
-    [self recreateMenu];
+  } else {
+    // CurrentRun is dropped by BootManager::RestoreConfig() when emulation ends and is never
+    // written to disk (the layer has no loader), so the user's saved choice survives intact.
+    // SetBaseOrCurrent then keeps targeting CurrentRun for the rest of this run, so the
+    // in-game "Touch IR Pointer" menu still works normally on top of it.
+    Config::Set(Config::LayerType::CurrentRun, Config::MAIN_TOUCH_PAD_IR_MODE, TCWiiTouchIRModeNone);
+  }
+
+  [self updatePointerValuesOnWiiTouchPads];
+  [self recreateMenu];
+}
+
+// One-time repair for installs already damaged on disk. Between the mandatory pre-game
+// calibration screen landing (effbb0924e) and this fix, that screen defaulted to "Point at TV"
+// and the automatic switch above wrote TouchPadIRMode = None straight into the persisted base
+// config on every single Wii boot. Deriving better defaults (as this branch now does) only
+// stops NEW damage - an affected user still has touch pointing disabled in their Dolphin.ini
+// and would stay broken, with no visible connection between that setting and the screen that
+// changed it. Put the shipped default back exactly once; anyone who genuinely wants motion
+// pointing can still choose it from the in-game Touch IR Pointer menu, and that will stick.
+- (void)repairForcedMotionPointingOnce {
+  static NSString* const kRepairedKey = @"DOLDidRepairForcedMotionPointingV1";
+
+  NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
+  if ([defaults boolForKey:kRepairedKey]) {
+    return;
+  }
+
+  [defaults setBool:true forKey:kRepairedKey];
+
+  if ((TCWiiTouchIRMode)Config::GetBase(Config::MAIN_TOUCH_PAD_IR_MODE) == TCWiiTouchIRModeNone) {
+    Config::SetBase(Config::MAIN_TOUCH_PAD_IR_MODE, Config::MAIN_TOUCH_PAD_IR_MODE.GetDefaultValue());
   }
 }
 
@@ -389,7 +437,7 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
   [alert addAction:[UIAlertAction actionWithTitle:@"Calibrate"
                                             style:UIAlertActionStyleDefault
                                           handler:^(UIAlertAction*) {
-    [self switchToMotionPointingIfNeeded];
+    [self switchToMotionPointingIfNeededPersisting:true];
 
     [[TCDeviceMotion shared] calibrateFlat:^{
       UIAlertController* done = [UIAlertController
@@ -421,7 +469,7 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
   [alert addAction:[UIAlertAction actionWithTitle:@"Calibrate"
                                             style:UIAlertActionStyleDefault
                                           handler:^(UIAlertAction*) {
-    [self switchToMotionPointingIfNeeded];
+    [self switchToMotionPointingIfNeededPersisting:true];
     [[TCDeviceMotion shared] recenterPointer];
   }]];
   [alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
@@ -448,7 +496,7 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
   [alert addAction:[UIAlertAction actionWithTitle:@"Recenter"
                                             style:UIAlertActionStyleDefault
                                           handler:^(UIAlertAction*) {
-    [self switchToMotionPointingIfNeeded];
+    [self switchToMotionPointingIfNeededPersisting:true];
     [[TCDeviceMotion shared] recenterPointer];
   }]];
   [alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
@@ -586,7 +634,12 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
       [[PreGameCalibrationPreferences shared] calibrationMode] == PointerCalibrationModePointAtTV) {
     _didApplyPreGameTVCalibration = true;
 
-    [self switchToMotionPointingIfNeeded];
+    // Deliberately NOT persisted, unlike the Motion menu's explicit Calibrate/Recenter actions:
+    // this is an automatic consequence of an answer on a screen the player is forced through
+    // before every boot, not a request to permanently rewrite their saved Touch IR Pointer
+    // setting. Writing base here is what left handheld players with touch pointing dead in
+    // Dolphin.ini, boot after boot.
+    [self switchToMotionPointingIfNeededPersisting:false];
     [[TCDeviceMotion shared] recenterPointer];
   }
 }
