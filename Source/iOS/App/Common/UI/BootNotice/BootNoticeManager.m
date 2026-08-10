@@ -39,13 +39,15 @@
 }
 
 - (BOOL)isBeingPresented {
-  UIWindowScene* scene = [MainSceneCoordinator shared].mainScene;
-  
-  if (scene == nil) {
+  // -windows can legitimately be empty for a scene that has not attached its window yet, and
+  // indexing an empty array throws.
+  UIWindow* window = [MainSceneCoordinator shared].mainScene.windows.firstObject;
+
+  if (window == nil) {
     return false;
   }
-  
-  return scene.windows[0].rootViewController.presentedViewController == _navigationController;
+
+  return window.rootViewController.presentedViewController == _navigationController;
 }
 
 - (void)enqueueViewController:(UIViewController*)viewController {
@@ -80,19 +82,23 @@
     return;
   }
   
-  UIWindowScene* scene = [MainSceneCoordinator shared].mainScene;
-  
-  if (scene == nil) {
+  UIWindow* window = [MainSceneCoordinator shared].mainScene.windows.firstObject;
+
+  if (window == nil) {
     return;
   }
-  
-  UIViewController* rootViewController = scene.windows[0].rootViewController;
-  
-  if (rootViewController.presentedViewController == _navigationController) {
+
+  UIViewController* rootViewController = window.rootViewController;
+
+  if (rootViewController == nil || rootViewController.presentedViewController == _navigationController) {
     return;
   }
-  
-  for (UIViewController* controller in _queuedControllers) {
+
+  // Pushed in reverse so the queue is first-in-first-seen. A UINavigationController displays the
+  // last controller pushed, so pushing in enqueue order showed the queue backwards - the notice
+  // enqueued last was the first thing a new user saw, and dismissing it revealed the one that was
+  // supposed to come first.
+  for (UIViewController* controller in [_queuedControllers reverseObjectEnumerator]) {
     [_navigationController pushViewController:controller animated:false];
   }
   
