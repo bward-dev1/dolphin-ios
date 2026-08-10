@@ -202,13 +202,26 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
 
     [controllerActions addObject:menu];
 
-    // Motion / gyroscope calibration.
+    // Motion / gyroscope calibration. Recentering is the same operation either way -- it makes
+    // the device's current orientation the pointer's neutral "forward" -- but the instructions
+    // are completely different depending on whether there's a separate screen to aim at.
+    // Offering only "Calibrate Gyroscope for TV" made the single most useful in-game pointer fix
+    // read as inapplicable to anyone playing on the device alone, which is the default setup.
+    const bool hasExternalDisplay = [EmulationCoordinator shared].isExternalDisplayConnected;
+
     UIMenu* motionMenu = [UIMenu menuWithTitle:@"Motion" image:[UIImage systemImageNamed:@"gyroscope"] identifier:nil options:0 children:@[
       [UIAction actionWithTitle:@"Calibrate Gyroscope" image:[UIImage systemImageNamed:@"level"] identifier:nil handler:^(UIAction*) {
         [self promptFlatGyroCalibration];
       }],
-      [UIAction actionWithTitle:@"Calibrate Gyroscope for TV" image:[UIImage systemImageNamed:@"tv"] identifier:nil handler:^(UIAction*) {
-        [self promptTVGyroCalibration];
+      [UIAction actionWithTitle:hasExternalDisplay ? @"Calibrate Gyroscope for TV" : @"Recenter Pointer (Handheld)"
+                          image:[UIImage systemImageNamed:hasExternalDisplay ? @"tv" : @"scope"]
+                     identifier:nil
+                        handler:^(UIAction*) {
+        if (hasExternalDisplay) {
+          [self promptTVGyroCalibration];
+        } else {
+          [self promptHandheldRecenter];
+        }
       }]
     ]];
 
@@ -406,6 +419,33 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
                 preferredStyle:UIAlertControllerStyleAlert];
 
   [alert addAction:[UIAlertAction actionWithTitle:@"Calibrate"
+                                            style:UIAlertActionStyleDefault
+                                          handler:^(UIAlertAction*) {
+    [self switchToMotionPointingIfNeeded];
+    [[TCDeviceMotion shared] recenterPointer];
+  }]];
+  [alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+
+  [self presentViewController:alert animated:YES completion:nil];
+}
+
+// "Recenter Pointer (Handheld)": the no-TV counterpart to promptTVGyroCalibration. Same
+// underlying IMU-IR Recenter pulse -- what changes is what the player is being told to aim at.
+// Playing on the device alone there is nothing across the room to point at; neutral "forward"
+// should simply be however they're already holding it, which is what recentering right now
+// gives them.
+- (void)promptHandheldRecenter {
+  UIAlertController* alert = [UIAlertController
+      alertControllerWithTitle:@"Recenter Pointer"
+                       message:@"Hold your device exactly how you want to play, then tap "
+                               @"Recenter. Wherever it's aimed right now becomes the pointer's "
+                               @"center, so you won't have to twist your wrists to reach the "
+                               @"edges of the screen. This also switches Touch IR Pointer to "
+                               @"Motion, so tilting the device actually moves the in-game "
+                               @"pointer afterward."
+                preferredStyle:UIAlertControllerStyleAlert];
+
+  [alert addAction:[UIAlertAction actionWithTitle:@"Recenter"
                                             style:UIAlertActionStyleDefault
                                           handler:^(UIAlertAction*) {
     [self switchToMotionPointingIfNeeded];

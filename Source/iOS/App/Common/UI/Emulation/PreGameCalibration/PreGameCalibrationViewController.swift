@@ -46,6 +46,8 @@ class PreGameCalibrationViewController: UIViewController {
 
   private let tvOptionsStack = UIStackView()
 
+  private let detectedDisplayLabel = UILabel()
+
   private let continueButton = UIButton(type: .system)
   private let activityIndicator = UIActivityIndicatorView(style: .medium)
 
@@ -64,6 +66,9 @@ class PreGameCalibrationViewController: UIViewController {
     self.updateTVOptionsVisibility()
   }
 
+  // PreGameCalibrationPreferences now answers with the player's own persisted choices, or -- the
+  // very first time, before they've ever answered -- with values derived from whether a TV or
+  // AirPlay display is actually attached. Nothing here hardcodes "you have a TV" any more.
   private func applyDefaults() {
     let prefs = PreGameCalibrationPreferences.shared
 
@@ -73,6 +78,10 @@ class PreGameCalibrationViewController: UIViewController {
     self.playingOnTVSwitch.isOn = prefs.isPlayingOnTV
     self.tvSizeControl.selectedSegmentIndex = prefs.tvScreenSize.rawValue
     self.tvTypeControl.selectedSegmentIndex = prefs.tvScreenType.rawValue
+
+    self.detectedDisplayLabel.text = PreGameCalibrationPreferences.isExternalDisplayAttached
+      ? DOLCoreLocalizedString("An external display is connected, so this is set up for pointing at it. Change anything below if that's not how you're playing.")
+      : DOLCoreLocalizedString("No TV or external display is connected, so this is set up for handheld play on this device. Your answers are remembered for next time.")
   }
 
   private func buildLayout() {
@@ -105,13 +114,18 @@ class PreGameCalibrationViewController: UIViewController {
     titleLabel.numberOfLines = 0
 
     let subtitleLabel = UILabel()
-    subtitleLabel.text = DOLCoreLocalizedString("A few quick questions so the Wii Remote pointer aims correctly from the start. This appears before every Wii game -- it only takes a few seconds.")
+    subtitleLabel.text = DOLCoreLocalizedString("A few quick questions so the Wii Remote pointer aims correctly from the start. This appears before every game -- it only takes a few seconds.")
     subtitleLabel.font = .preferredFont(forTextStyle: .subheadline)
     subtitleLabel.textColor = .secondaryLabel
     subtitleLabel.numberOfLines = 0
 
+    self.detectedDisplayLabel.font = .preferredFont(forTextStyle: .footnote)
+    self.detectedDisplayLabel.textColor = .secondaryLabel
+    self.detectedDisplayLabel.numberOfLines = 0
+
     self.stackView.addArrangedSubview(titleLabel)
     self.stackView.addArrangedSubview(subtitleLabel)
+    self.stackView.addArrangedSubview(self.detectedDisplayLabel)
 
     self.stackView.addArrangedSubview(self.buildSection(
       title: DOLCoreLocalizedString("How do you hold your device while playing?"),
@@ -228,6 +242,10 @@ class PreGameCalibrationViewController: UIViewController {
     prefs.isPlayingOnTV = self.playingOnTVSwitch.isOn
     prefs.tvScreenSize = TVScreenSize(rawValue: self.tvSizeControl.selectedSegmentIndex) ?? .widescreen
     prefs.tvScreenType = TVScreenType(rawValue: self.tvTypeControl.selectedSegmentIndex) ?? .lcdOrLed
+
+    // Has to come last: until this is set, the getters above deliberately ignore stored values
+    // and report display-derived defaults instead.
+    prefs.markAnswered()
 
     self.continueButton.isEnabled = false
     self.activityIndicator.startAnimating()
