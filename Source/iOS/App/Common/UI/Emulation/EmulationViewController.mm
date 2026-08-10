@@ -28,6 +28,11 @@
 
 @implementation EmulationViewController {
   bool _didStartEmulation;
+
+  // Whether the pointer-setup screen currently on screen is the pre-boot gate (finishing it
+  // starts the game) or an on-demand recalibration opened from the in-game menu (finishing it
+  // must not).
+  bool _pointerSetupWillStartEmulation;
 }
 
 - (void)viewDidLoad {
@@ -77,7 +82,7 @@
     } else if ([self checkIfNeedToShowNKitWarning]) {
       [self showNKitWarning];
     } else {
-      [self showPreGameCalibration];
+      [self showPreGameCalibrationIfNeeded];
     }
 
     _didStartEmulation = true;
@@ -105,7 +110,7 @@
     if ([self checkIfNeedToShowNKitWarning]) {
       [self showNKitWarning];
     } else {
-      [self showPreGameCalibration];
+      [self showPreGameCalibrationIfNeeded];
     }
   }];
 }
@@ -129,40 +134,70 @@
 - (void)didFinishNKitWarningScreenWithResult:(BOOL)result sender:(id)sender {
   [self dismissViewControllerAnimated:true completion:^{
     if (result) {
-      [self showPreGameCalibration];
+      [self showPreGameCalibrationIfNeeded];
     } else {
       [self.navigationController dismissViewControllerAnimated:true completion:nil];
     }
   }];
 }
 
-// Shown right before every Wii boot, regardless of which path got here (JIT acquired, JIT not
-// required, or an accepted NKit warning) -- this is the single funnel point so the calibration
-// screen can never be skipped.
+// The single funnel point every boot path (JIT acquired, JIT not required, accepted NKit
+// warning) lands on. It used to present the pointer-calibration screen unconditionally, which
+// meant six questions in front of every game -- including GameCube titles, which have no Wii
+// Remote, no IR pointer and no motion controls for any of it to configure.
 //
-// GameCube titles are excluded. Every question on that screen is about the emulated Wii
-// Remote's pointer, there is no Wii Remote in a GameCube boot for any of it to affect, and the
-// screen's own subtitle already tells the player "This appears before every Wii game." It is
-// non-cancellable and full-screen, so leaving it in front of GameCube boots is pure friction
-// between the player and the game with nothing configured in exchange.
-- (void)showPreGameCalibration {
-  if (![self.bootParameter targetsWii]) {
+// GameCube titles were already excluded via -targetsWii. This narrows it the rest of the way to
+// the case the screen actually exists to serve: a Wii title whose current display setup (TV
+// attached vs. handheld) the player hasn't answered for yet. Answered once, that answer persists
+// and is applied post-boot without the screen ever appearing again; recalibration lives in the
+// in-game menu, where you go when you actually want it.
+- (void)showPreGameCalibrationIfNeeded {
+  const bool needsPointerSetup = [self.bootParameter targetsWii] &&
+      ![PreGameCalibrationPreferences shared].hasAnsweredForCurrentDisplay;
+
+  if (!needsPointerSetup) {
     [self startEmulation];
 
     return;
   }
 
+  _pointerSetupWillStartEmulation = true;
+
   PreGameCalibrationViewController* calibrationController = [[PreGameCalibrationViewController alloc] init];
   calibrationController.delegate = self;
+  calibrationController.presentedForRecalibration = false;
   calibrationController.modalPresentationStyle = UIModalPresentationFullScreen;
   calibrationController.modalInPresentation = true;
 
   [self presentViewController:calibrationController animated:true completion:nil];
 }
 
+- (void)presentPointerSetupForRecalibration {
+  _pointerSetupWillStartEmulation = false;
+
+  PreGameCalibrationViewController* calibrationController = [[PreGameCalibrationViewController alloc] init];
+  calibrationController.delegate = self;
+  calibrationController.presentedForRecalibration = true;
+  calibrationController.modalPresentationStyle = UIModalPresentationPageSheet;
+  calibrationController.modalInPresentation = false;
+
+  [self presentViewController:calibrationController animated:true completion:nil];
+}
+
+- (void)applyRecalibratedPointerMode {
+  // Overridden by EmulationiOSViewController.
+}
+
 - (void)didFinishPreGameCalibrationScreenWithSender:(id)sender {
+  const bool startEmulationOnDismiss = _pointerSetupWillStartEmulation;
+  _pointerSetupWillStartEmulation = false;
+
   [self dismissViewControllerAnimated:true completion:^{
-    [self startEmulation];
+    if (startEmulationOnDismiss) {
+      [self startEmulation];
+    } else {
+      [self applyRecalibratedPointerMode];
+    }
   }];
 }
 

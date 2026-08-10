@@ -218,6 +218,13 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
     const bool hasExternalDisplay = [EmulationCoordinator shared].isExternalDisplayConnected;
 
     UIMenu* motionMenu = [UIMenu menuWithTitle:@"Motion" image:[UIImage systemImageNamed:@"gyroscope"] identifier:nil options:0 children:@[
+      // The pointer-setup screen no longer blocks every boot -- it's asked once per display
+      // setup and then remembered. This is where it lives afterwards, so changing "am I aiming
+      // at a TV or at the device?" is still a thing you can do, at the moment you want to do it
+      // rather than as a toll on the way into a game.
+      [UIAction actionWithTitle:@"Pointer Setup..." image:[UIImage systemImageNamed:@"slider.horizontal.3"] identifier:nil handler:^(UIAction*) {
+        [self presentPointerSetupForRecalibration];
+      }],
       [UIAction actionWithTitle:@"Calibrate Gyroscope" image:[UIImage systemImageNamed:@"level"] identifier:nil handler:^(UIAction*) {
         [self promptFlatGyroCalibration];
       }],
@@ -504,6 +511,22 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
   [self presentViewController:alert animated:YES completion:nil];
 }
 
+// Called by EmulationViewController once the on-demand "Pointer Setup..." screen has been
+// confirmed and dismissed mid-game. The pre-boot path gets this applied for it by
+// updateVisibleTouchPadToWii when the pointer first goes live; by the time this runs the pointer
+// already exists and nothing is going to re-initialise it, so push the new mode on directly.
+- (void)applyRecalibratedPointerMode {
+  if ([[PreGameCalibrationPreferences shared] calibrationMode] != PointerCalibrationModePointAtTV) {
+    return;
+  }
+
+  // Non-persisting, for the same reason the pre-boot path is: the Pointer Setup screen asks what
+  // you're aiming at, it does not ask permission to rewrite TouchPadIRMode in Dolphin.ini. Only
+  // the Motion menu's Calibrate/Recenter actions, whose alert text says so, persist.
+  [self switchToMotionPointingIfNeededPersisting:false];
+  [[TCDeviceMotion shared] recenterPointer];
+}
+
 // Haptic-only feedback rather than a modal alert -- a screenshot should never interrupt
 // gameplay the way a tap-to-dismiss dialog would.
 - (void)takeScreenshot {
@@ -624,21 +647,22 @@ typedef NS_ENUM(NSInteger, DOLEmulationVisibleTouchPad) {
 
   [self updatePointerValuesOnWiiTouchPads];
 
-  // The pre-game calibration screen already ran the flat gyro-bias calibration before boot
-  // (that part doesn't need the core running). If the player chose "Point at TV" mode there,
-  // finish the job now that the Wiimote pointer is actually live: switch Touch IR Pointer to
-  // Motion and recenter on their current, presumably-still-aimed-at-the-TV orientation. Only
-  // once per session -- later title changes (e.g. Wii Menu handing off to the game) shouldn't
-  // re-recenter using whatever orientation the device happens to be in at that later moment.
+  // Apply the player's stored Pointer Setup answer. This runs on every boot whether or not the
+  // setup screen was shown -- the screen is asked once per display setup, but the answer it
+  // produced keeps taking effect afterwards, which is the whole reason it no longer needs to
+  // appear. If that answer is "Point at TV", finish the job now that the Wiimote pointer is
+  // actually live: switch Touch IR Pointer to Motion and recenter on their current,
+  // presumably-still-aimed-at-the-TV orientation. Only once per session -- later title changes
+  // (e.g. Wii Menu handing off to the game) shouldn't re-recenter using whatever orientation the
+  // device happens to be in at that later moment.
   if (!_didApplyPreGameTVCalibration &&
       [[PreGameCalibrationPreferences shared] calibrationMode] == PointerCalibrationModePointAtTV) {
     _didApplyPreGameTVCalibration = true;
 
     // Deliberately NOT persisted, unlike the Motion menu's explicit Calibrate/Recenter actions:
-    // this is an automatic consequence of an answer on a screen the player is forced through
-    // before every boot, not a request to permanently rewrite their saved Touch IR Pointer
-    // setting. Writing base here is what left handheld players with touch pointing dead in
-    // Dolphin.ini, boot after boot.
+    // this is an automatic consequence of a stored Pointer Setup answer, not a request to
+    // permanently rewrite the saved Touch IR Pointer setting. Writing base here is what left
+    // handheld players with touch pointing dead in Dolphin.ini, boot after boot.
     [self switchToMotionPointingIfNeededPersisting:false];
     [[TCDeviceMotion shared] recenterPointer];
   }

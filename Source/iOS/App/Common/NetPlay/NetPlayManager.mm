@@ -583,6 +583,17 @@ private:
   parameter.bootType = EmulationBootTypeFile;
   parameter.path = CppToFoundationString(path);
   parameter.netplayBootSessionData = sessionData;
+
+  // Recover the platform from the already-scanned game cache rather than re-opening the disc:
+  // NetPlay only ever boots something the local library already knows about, so this is a
+  // dictionary lookup's worth of work rather than a fresh volume parse on the boot path.
+  for (GameFilePtrWrapper* wrapper in [[GameFileCacheManager sharedManager] getGames]) {
+    if (wrapper.gameFile->GetFilePath() == path) {
+      parameter.isWiiTitle = DiscIO::IsWii(wrapper.gameFile->GetPlatform());
+      break;
+    }
+  }
+
   return parameter;
 }
 

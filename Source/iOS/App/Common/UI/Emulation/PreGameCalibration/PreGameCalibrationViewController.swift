@@ -3,85 +3,67 @@
 
 import UIKit
 
-// Shown before every single game boot, unconditionally. Collects pointer-aiming context (how
-// the device is held, which way it faces the TV/device when laid flat, and whether play is
-// happening on a TV vs. handheld) and runs a real gyro-bias calibration on the spot -- this part
-// doesn't need the emulation core running, so it's safe to do here in the pre-boot gate chain
-// alongside JitWaitViewController/NKitWarningViewController.
+// Pointer setup for Wii titles: one question, plus the real gyro-bias calibration (which doesn't
+// need the emulation core running, so it's safe to do here in the pre-boot gate chain alongside
+// JitWaitViewController/NKitWarningViewController).
+//
+// This screen used to appear before *every* boot -- including GameCube titles, which have no Wii
+// pointer at all -- and asked six questions: how you hold the device, which way it faces when laid
+// flat, what you're calibrating the pointer to, whether you're playing on a TV, your TV's screen
+// size, and your TV's screen type. Five of those six answers were read by nothing anywhere in the
+// codebase, and three of them were about a television that most sessions don't involve. What's
+// left is the single answer that has an effect (see PointerCalibrationMode), pre-selected from
+// whether an external display is actually attached, remembered per display setup, and asked once
+// rather than every time.
+//
+// EmulationViewController now only puts this in front of a boot for a Wii title whose current
+// display setup hasn't been answered yet. It is otherwise reachable on demand from the in-game
+// menu (Controllers -> Motion -> Pointer Setup), which is where recalibration belongs.
 class PreGameCalibrationViewController: UIViewController {
   @objc weak var delegate: PreGameCalibrationViewControllerDelegate?
 
+  // False: this is the one-time gate in front of a boot, and finishing it starts the game.
+  // True: the player opened it mid-game from the Motion menu to change their answer, so it gets a
+  // Cancel button and is dismissible.
+  @objc(presentedForRecalibration) var presentedForRecalibration: Bool = false
+
   private let scrollView = UIScrollView()
   private let stackView = UIStackView()
-
-  private let holdOrientationControl = UISegmentedControl(items: [
-    DOLCoreLocalizedString("Upright"),
-    DOLCoreLocalizedString("Landscape"),
-    DOLCoreLocalizedString("Portrait")
-  ])
-
-  private let flatFacingControl = UISegmentedControl(items: [
-    DOLCoreLocalizedString("Screen faces up"),
-    DOLCoreLocalizedString("Screen faces down")
-  ])
 
   private let calibrationModeControl = UISegmentedControl(items: [
     DOLCoreLocalizedString("Point at TV"),
     DOLCoreLocalizedString("Point at device")
   ])
 
-  private let playingOnTVSwitch = UISwitch()
-
-  private let tvSizeControl = UISegmentedControl(items: [
-    DOLCoreLocalizedString("Widescreen (16:9)"),
-    DOLCoreLocalizedString("Standard (4:3)")
-  ])
-
-  private let tvTypeControl = UISegmentedControl(items: [
-    DOLCoreLocalizedString("LCD/LED"),
-    DOLCoreLocalizedString("OLED"),
-    DOLCoreLocalizedString("Projector"),
-    DOLCoreLocalizedString("CRT/Older")
-  ])
-
-  private let tvOptionsStack = UIStackView()
-
   private let detectedDisplayLabel = UILabel()
 
   private let continueButton = UIButton(type: .system)
+  private let cancelButton = UIButton(type: .system)
   private let activityIndicator = UIActivityIndicatorView(style: .medium)
 
   override func viewDidLoad() {
     super.viewDidLoad()
 
     self.view.backgroundColor = .systemBackground
-    self.isModalInPresentation = true
+    self.isModalInPresentation = !self.presentedForRecalibration
 
     self.buildLayout()
     self.applyDefaults()
 
-    self.playingOnTVSwitch.addTarget(self, action: #selector(playingOnTVChanged), for: .valueChanged)
     self.continueButton.addTarget(self, action: #selector(continuePressed), for: .touchUpInside)
-
-    self.updateTVOptionsVisibility()
+    self.cancelButton.addTarget(self, action: #selector(cancelPressed), for: .touchUpInside)
   }
 
-  // PreGameCalibrationPreferences now answers with the player's own persisted choices, or -- the
-  // very first time, before they've ever answered -- with values derived from whether a TV or
-  // AirPlay display is actually attached. Nothing here hardcodes "you have a TV" any more.
+  // PreGameCalibrationPreferences answers with the player's own persisted choice for the display
+  // setup they're in, or -- the first time in that setup -- with a value derived from whether a TV
+  // or AirPlay display is actually attached. Nothing here hardcodes "you have a TV" any more.
   private func applyDefaults() {
-    let prefs = PreGameCalibrationPreferences.shared
-
-    self.holdOrientationControl.selectedSegmentIndex = prefs.holdOrientation.rawValue
-    self.flatFacingControl.selectedSegmentIndex = prefs.flatFacing.rawValue
-    self.calibrationModeControl.selectedSegmentIndex = prefs.calibrationMode.rawValue
-    self.playingOnTVSwitch.isOn = prefs.isPlayingOnTV
-    self.tvSizeControl.selectedSegmentIndex = prefs.tvScreenSize.rawValue
-    self.tvTypeControl.selectedSegmentIndex = prefs.tvScreenType.rawValue
+    self.calibrationModeControl.selectedSegmentIndex =
+      PreGameCalibrationPreferences.shared.calibrationMode.rawValue
 
     self.detectedDisplayLabel.text = PreGameCalibrationPreferences.isExternalDisplayAttached
-      ? DOLCoreLocalizedString("An external display is connected, so this is set up for pointing at it. Change anything below if that's not how you're playing.")
-      : DOLCoreLocalizedString("No TV or external display is connected, so this is set up for handheld play on this device. Your answers are remembered for next time.")
+      ? DOLCoreLocalizedString("An external display is connected, so this is set to point at it.")
+      : DOLCoreLocalizedString("No TV or external display is connected, so this is set for handheld play.")
   }
 
   private func buildLayout() {
@@ -90,7 +72,7 @@ class PreGameCalibrationViewController: UIViewController {
 
     self.stackView.translatesAutoresizingMaskIntoConstraints = false
     self.stackView.axis = .vertical
-    self.stackView.spacing = 24
+    self.stackView.spacing = 20
     self.stackView.isLayoutMarginsRelativeArrangement = true
     self.stackView.layoutMargins = UIEdgeInsets(top: 24, left: 20, bottom: 24, right: 20)
     self.scrollView.addSubview(self.stackView)
@@ -109,19 +91,25 @@ class PreGameCalibrationViewController: UIViewController {
     ])
 
     let titleLabel = UILabel()
-    titleLabel.text = DOLCoreLocalizedString("Pointer Calibration")
+    titleLabel.text = DOLCoreLocalizedString("Pointer Setup")
     titleLabel.font = .preferredFont(forTextStyle: .largeTitle)
+    titleLabel.adjustsFontForContentSizeCategory = true
     titleLabel.numberOfLines = 0
 
     let subtitleLabel = UILabel()
-    // "every Wii game", not "every game": EmulationViewController now skips this gate entirely
-    // for GameCube titles, which have no Wii Remote for any of these answers to affect.
-    subtitleLabel.text = DOLCoreLocalizedString("A few quick questions so the Wii Remote pointer aims correctly from the start. This appears before every Wii game -- it only takes a few seconds.")
+    // Not "before every Wii game" any more: EmulationViewController skips this gate entirely for
+    // GameCube titles, and for Wii titles only shows it until the current display setup has been
+    // answered once.
+    subtitleLabel.text = self.presentedForRecalibration
+      ? DOLCoreLocalizedString("Change how the Wii Remote pointer is aimed, then recalibrate.")
+      : DOLCoreLocalizedString("One question, asked once, so the Wii Remote pointer aims correctly. You won't see this again unless you plug in a TV or open it from the in-game menu.")
     subtitleLabel.font = .preferredFont(forTextStyle: .subheadline)
+    subtitleLabel.adjustsFontForContentSizeCategory = true
     subtitleLabel.textColor = .secondaryLabel
     subtitleLabel.numberOfLines = 0
 
     self.detectedDisplayLabel.font = .preferredFont(forTextStyle: .footnote)
+    self.detectedDisplayLabel.adjustsFontForContentSizeCategory = true
     self.detectedDisplayLabel.textColor = .secondaryLabel
     self.detectedDisplayLabel.numberOfLines = 0
 
@@ -130,60 +118,21 @@ class PreGameCalibrationViewController: UIViewController {
     self.stackView.addArrangedSubview(self.detectedDisplayLabel)
 
     self.stackView.addArrangedSubview(self.buildSection(
-      title: DOLCoreLocalizedString("How do you hold your device while playing?"),
-      description: DOLCoreLocalizedString("Upright is one-handed, like a real Wii Remote pointed at the screen. Landscape and Portrait are two-handed, like a normal handheld game. This tells the pointer which way is \"up\" so tilting the device feels natural."),
-      control: self.holdOrientationControl
-    ))
-
-    self.stackView.addArrangedSubview(self.buildSection(
-      title: DOLCoreLocalizedString("When you lay your device flat to calibrate, which way faces up?"),
-      description: DOLCoreLocalizedString("Used for the flat calibration below -- rest your device on a table or your lap, screen up or screen down, then tell us which so the resting position reads as level."),
-      control: self.flatFacingControl
-    ))
-
-    self.stackView.addArrangedSubview(self.buildSection(
-      title: DOLCoreLocalizedString("What are you calibrating the pointer to?"),
-      description: DOLCoreLocalizedString("Point at TV centers the pointer wherever you're currently aiming your device -- pick this if you're pointing at a TV or external screen. Point at device keeps the pointer centered relative to how you're holding the device instead, which is better if you're playing handheld with no TV in front of you."),
+      title: DOLCoreLocalizedString("What are you aiming the pointer at?"),
+      description: DOLCoreLocalizedString("Point at TV centers the pointer on wherever the device is aimed when the game starts -- pick this if you're pointing across the room at a TV or external screen. Point at device leaves the pointer alone so your touch controls keep working, which is what you want playing handheld."),
       control: self.calibrationModeControl
     ))
 
-    let tvToggleRow = UIStackView()
-    tvToggleRow.axis = .horizontal
-    tvToggleRow.spacing = 12
-
-    let tvToggleLabel = UILabel()
-    tvToggleLabel.text = DOLCoreLocalizedString("Are you playing on a TV?")
-    tvToggleLabel.font = .preferredFont(forTextStyle: .headline)
-
-    tvToggleRow.addArrangedSubview(tvToggleLabel)
-    tvToggleRow.addArrangedSubview(self.playingOnTVSwitch)
-
-    self.stackView.addArrangedSubview(tvToggleRow)
-
-    self.tvOptionsStack.axis = .vertical
-    self.tvOptionsStack.spacing = 24
-
-    self.tvOptionsStack.addArrangedSubview(self.buildSection(
-      title: DOLCoreLocalizedString("What size is your TV screen?"),
-      description: DOLCoreLocalizedString("Widescreen (16:9) is the wide shape almost all modern TVs use. Standard (4:3) is the older, more square shape."),
-      control: self.tvSizeControl
-    ))
-
-    self.tvOptionsStack.addArrangedSubview(self.buildSection(
-      title: DOLCoreLocalizedString("What type of screen is it?"),
-      description: DOLCoreLocalizedString("Helps fine-tune how the pointer responds for your specific display."),
-      control: self.tvTypeControl
-    ))
-
-    self.stackView.addArrangedSubview(self.tvOptionsStack)
-
-    self.continueButton.setTitle(DOLCoreLocalizedString("Calibrate & Continue"), for: .normal)
+    self.continueButton.setTitle(self.presentedForRecalibration
+      ? DOLCoreLocalizedString("Save & Calibrate")
+      : DOLCoreLocalizedString("Start Game"), for: .normal)
     self.continueButton.titleLabel?.font = .preferredFont(forTextStyle: .headline)
+    self.continueButton.titleLabel?.adjustsFontForContentSizeCategory = true
     self.continueButton.backgroundColor = .systemBlue
     self.continueButton.setTitleColor(.white, for: .normal)
     self.continueButton.layer.cornerRadius = 12
     self.continueButton.translatesAutoresizingMaskIntoConstraints = false
-    self.continueButton.heightAnchor.constraint(equalToConstant: 50).isActive = true
+    self.continueButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 50).isActive = true
 
     self.activityIndicator.hidesWhenStopped = true
     self.activityIndicator.translatesAutoresizingMaskIntoConstraints = false
@@ -202,6 +151,27 @@ class PreGameCalibrationViewController: UIViewController {
     ])
 
     self.stackView.addArrangedSubview(buttonContainer)
+
+    // The gyro-bias reading below takes about half a second of stillness. Nothing ever said so
+    // before, which made it possible to capture a "resting" bias mid-pickup and bake the resulting
+    // drift into the whole session.
+    let calibrationHintLabel = UILabel()
+    calibrationHintLabel.text = DOLCoreLocalizedString("Hold the device still for a moment after tapping -- it takes a quick gyroscope reading to stop the pointer drifting.")
+    calibrationHintLabel.font = .preferredFont(forTextStyle: .footnote)
+    calibrationHintLabel.adjustsFontForContentSizeCategory = true
+    calibrationHintLabel.textColor = .secondaryLabel
+    calibrationHintLabel.textAlignment = .center
+    calibrationHintLabel.numberOfLines = 0
+
+    self.stackView.addArrangedSubview(calibrationHintLabel)
+
+    if self.presentedForRecalibration {
+      self.cancelButton.setTitle(DOLCoreLocalizedString("Cancel"), for: .normal)
+      self.cancelButton.titleLabel?.font = .preferredFont(forTextStyle: .body)
+      self.cancelButton.titleLabel?.adjustsFontForContentSizeCategory = true
+
+      self.stackView.addArrangedSubview(self.cancelButton)
+    }
   }
 
   private func buildSection(title: String, description: String, control: UISegmentedControl) -> UIView {
@@ -212,11 +182,13 @@ class PreGameCalibrationViewController: UIViewController {
     let titleLabel = UILabel()
     titleLabel.text = title
     titleLabel.font = .preferredFont(forTextStyle: .headline)
+    titleLabel.adjustsFontForContentSizeCategory = true
     titleLabel.numberOfLines = 0
 
     let descriptionLabel = UILabel()
     descriptionLabel.text = description
     descriptionLabel.font = .preferredFont(forTextStyle: .footnote)
+    descriptionLabel.adjustsFontForContentSizeCategory = true
     descriptionLabel.textColor = .secondaryLabel
     descriptionLabel.numberOfLines = 0
 
@@ -227,38 +199,31 @@ class PreGameCalibrationViewController: UIViewController {
     return container
   }
 
-  @objc private func playingOnTVChanged() {
-    self.updateTVOptionsVisibility()
-  }
-
-  private func updateTVOptionsVisibility() {
-    self.tvOptionsStack.isHidden = !self.playingOnTVSwitch.isOn
+  @objc private func cancelPressed() {
+    self.dismiss(animated: true, completion: nil)
   }
 
   @objc private func continuePressed() {
     let prefs = PreGameCalibrationPreferences.shared
 
-    prefs.holdOrientation = DeviceHoldOrientation(rawValue: self.holdOrientationControl.selectedSegmentIndex) ?? .upright
-    prefs.flatFacing = DeviceFlatFacing(rawValue: self.flatFacingControl.selectedSegmentIndex) ?? .screenUp
     // Falls back to .pointAtDevice rather than .pointAtTV: selectedSegmentIndex is -1 when no
     // segment is selected, and .pointAtTV is the one answer that switches Touch IR Pointer off,
     // so an out-of-range read must not be able to land on it.
-    prefs.calibrationMode = PointerCalibrationMode(rawValue: self.calibrationModeControl.selectedSegmentIndex) ?? .pointAtDevice
-    prefs.isPlayingOnTV = self.playingOnTVSwitch.isOn
-    prefs.tvScreenSize = TVScreenSize(rawValue: self.tvSizeControl.selectedSegmentIndex) ?? .widescreen
-    prefs.tvScreenType = TVScreenType(rawValue: self.tvTypeControl.selectedSegmentIndex) ?? .lcdOrLed
+    prefs.calibrationMode =
+      PointerCalibrationMode(rawValue: self.calibrationModeControl.selectedSegmentIndex) ?? .pointAtDevice
 
-    // Has to come last: until this is set, the getters above deliberately ignore stored values
-    // and report display-derived defaults instead.
-    prefs.markAnswered()
+    // Has to come after the write: until this is set, the getter above deliberately ignores the
+    // stored value and reports the display-derived default instead.
+    prefs.markAnsweredForCurrentDisplay()
 
     self.continueButton.isEnabled = false
+    self.cancelButton.isEnabled = false
     self.activityIndicator.startAnimating()
 
     // Calibrating flat gyro bias doesn't need the emulation core running -- it only touches
-    // CoreMotion and TCDeviceMotion's own state, so it's safe and useful to do it right here,
-    // before the game even boots. TV-aim recentering happens once the pointer is actually live
-    // in-game (EmulationiOSViewController auto-fires it post-boot when calibrationMode == .pointAtTV).
+    // CoreMotion and TCDeviceMotion's own state, so it's safe and useful to do here, before the
+    // game even boots. Aim-at-TV recentering needs the pointer to actually be live, so it happens
+    // post-boot in EmulationiOSViewController when calibrationMode == .pointAtTV.
     TCDeviceMotion.shared.calibrateFlat { [weak self] in
       guard let self = self else {
         return
